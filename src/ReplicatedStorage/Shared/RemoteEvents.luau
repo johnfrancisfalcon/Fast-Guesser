@@ -47,4 +47,7 @@ return {
 
 	-- Server -> all clients. Payload: winner playerId.
 	GameOver = getOrCreateRemoteEvent("GameOver"),
+
+	-- Server -> all clients. Payload: full round state for both players.
+	RoundStateChanged = getOrCreateRemoteEvent("RoundStateChanged"),
 }

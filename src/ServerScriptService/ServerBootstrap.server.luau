@@ -34,6 +34,32 @@ local function bothSecretsSubmitted()
 	return true
 end
 
+local function buildRoundState(match)
+	local playerOneId = match.players[1]
+	local playerTwoId = match.players[2]
+
+	return {
+		playerOneId = playerOneId,
+		playerTwoId = playerTwoId,
+		currentTurn = match.currentTurn,
+		winner = match.winner,
+		lockedPositionsByPlayerId = {
+			-- Use string keys so the dictionary is stable over RemoteEvents.
+			[tostring(playerOneId)] = match.lockedPositions[playerOneId],
+			[tostring(playerTwoId)] = match.lockedPositions[playerTwoId],
+		},
+	}
+end
+
+local function fireRoundStateChanged()
+	local match = getPrototypeMatch()
+	if not match then
+		return
+	end
+
+	RemoteEvents.RoundStateChanged:FireAllClients(buildRoundState(match))
+end
+
 local function tryStartPrototypeMatch()
 	if prototypeMatchId or #prototypePlayers < 2 then
 		return
@@ -126,6 +152,7 @@ RemoteEvents.SecretSubmitted.OnServerEvent:Connect(function(player, secret)
 
 	local match = getPrototypeMatch()
 	if match and match.currentTurn then
+		fireRoundStateChanged()
 		RemoteEvents.TurnChanged:FireAllClients(match.currentTurn)
 	end
 end)
@@ -147,10 +174,12 @@ RemoteEvents.GuessSubmitted.OnServerEvent:Connect(function(player, guess)
 		return
 	end
 
-	RemoteEvents.TurnChanged:FireAllClients(match.currentTurn)
-
 	if match.winner then
 		RemoteEvents.GameOver:FireAllClients(match.winner)
+		fireRoundStateChanged()
+	else
+		fireRoundStateChanged()
+		RemoteEvents.TurnChanged:FireAllClients(match.currentTurn)
 	end
 end)
 

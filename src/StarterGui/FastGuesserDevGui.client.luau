@@ -173,8 +173,6 @@ end
 local function onGuessResult(result)
 	print("[FastGuesserClient] guess result")
 	statusLabel.Text = "Guess submitted"
-	playerLockedLabel.Text = "Your locked: " .. formatLockedPositions(result.lockedPositions)
-	opponentLockedLabel.Text = "Opponent locked: not available yet"
 	guessTextBox.Text = ""
 end
 
@@ -185,6 +183,33 @@ local function onGameOver(winnerId)
 	statusLabel.Text = "Game over"
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
+end
+
+local function onRoundStateChanged(roundState)
+	print("[FastGuesserClient] round state changed")
+
+	local localPlayerId = localPlayer.UserId
+	local opponentId = roundState.playerOneId
+	if opponentId == localPlayerId then
+		opponentId = roundState.playerTwoId
+	end
+
+	local lockedPositionsByPlayerId = roundState.lockedPositionsByPlayerId or {}
+	local localLockedPositions = lockedPositionsByPlayerId[tostring(localPlayerId)] or {}
+	local opponentLockedPositions = lockedPositionsByPlayerId[tostring(opponentId)] or {}
+
+	playerLockedLabel.Text = "Your locked: " .. formatLockedPositions(localLockedPositions)
+	opponentLockedLabel.Text = "Opponent locked: " .. formatLockedPositions(opponentLockedPositions)
+
+	if roundState.currentTurn then
+		onTurnChanged(roundState.currentTurn)
+	end
+
+	if roundState.winner then
+		onGameOver(roundState.winner)
+	else
+		gameOverLabel.Text = ""
+	end
 end
 
 submitSecretButton.MouseButton1Click:Connect(function()
@@ -229,3 +254,4 @@ RemoteEvents.SecretRequested.OnClientEvent:Connect(onSecretRequested)
 RemoteEvents.TurnChanged.OnClientEvent:Connect(onTurnChanged)
 RemoteEvents.GuessResult.OnClientEvent:Connect(onGuessResult)
 RemoteEvents.GameOver.OnClientEvent:Connect(onGameOver)
+RemoteEvents.RoundStateChanged.OnClientEvent:Connect(onRoundStateChanged)
