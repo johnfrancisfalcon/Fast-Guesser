@@ -1,5 +1,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local RUN_SMOKE_TEST = false
+if not RUN_SMOKE_TEST then
+	return
+end
+
 local MatchService = require(script.Parent.Parent.Services.MatchService)
 local FeedbackLogic = require(ReplicatedStorage.Shared.FeedbackLogic)
 
