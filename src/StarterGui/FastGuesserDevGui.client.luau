@@ -6,6 +6,13 @@ local playerGui = script.Parent
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
+local GAME_STATES = {
+	WaitingForPlayers = "WaitingForPlayers",
+	WaitingForSecrets = "WaitingForSecrets",
+	InProgress = "InProgress",
+	RoundOver = "RoundOver",
+	WaitingForRematch = "WaitingForRematch",
+}
 
 print("[FastGuesserClient] started", localPlayer.UserId)
 
@@ -84,7 +91,7 @@ local function getOrCreateDevGui()
 	frame.Parent = screenGui
 
 	createLabel(frame, "TitleLabel", "Fast Guesser Dev Test", 12, 32)
-	createLabel(frame, "StatusLabel", "Waiting for players", 50, 44)
+	createLabel(frame, "StatusLabel", "Waiting for another player", 50, 44)
 
 	createTextBox(frame, "SecretTextBox", "4-digit secret", 12, 108)
 	createButton(frame, "SubmitSecretButton", "Submit Secret", 206, 108)
@@ -96,7 +103,7 @@ local function getOrCreateDevGui()
 	createLabel(frame, "OpponentLockedLabel", "Opponent locked: _ _ _ _", 248, 32)
 	createLabel(frame, "TurnLabel", "Turn: waiting", 284, 32)
 	createLabel(frame, "GameOverLabel", "", 320, 48)
-	createButton(frame, "RestartButton", "Restart Round", 206, 382)
+	createButton(frame, "RestartButton", "Play Again", 206, 382)
 
 	return screenGui
 end
@@ -121,6 +128,8 @@ local isPlayerTurn = false
 local bothSecretsSubmitted = false
 local secretControlsEnabled = false
 local guessControlsEnabled = false
+local canRequestRematch = false
+local currentRoundId = nil
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
@@ -151,6 +160,7 @@ local function setGuessControlsEnabled(enabled)
 end
 
 local function setRestartControlsEnabled(enabled)
+	canRequestRematch = enabled
 	restartButton.Active = enabled
 	restartButton.AutoButtonColor = enabled
 end
@@ -161,7 +171,7 @@ end
 
 setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
-setRestartControlsEnabled(true)
+setRestartControlsEnabled(false)
 
 local function onSecretRequested()
 	print("[FastGuesserClient] secret requested")
@@ -174,7 +184,6 @@ local function onSecretRequested()
 	isPlayerTurn = false
 	bothSecretsSubmitted = false
 	statusLabel.Text = "Enter your secret"
-	secretTextBox.Text = ""
 	guessTextBox.Text = ""
 	gameOverLabel.Text = ""
 	playerLockedLabel.Text = "Your locked: _ _ _ _"
@@ -211,10 +220,21 @@ local function onGameOver(winnerId)
 	statusLabel.Text = "Game over"
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
+	setRestartControlsEnabled(true)
 end
 
 local function onRoundStateChanged(roundState)
 	print("[FastGuesserClient] round state changed")
+
+	if roundState.roundId and roundState.roundId ~= currentRoundId then
+		currentRoundId = roundState.roundId
+		hasSubmittedSecret = false
+		isGameOver = false
+		isPlayerTurn = false
+		bothSecretsSubmitted = false
+		secretTextBox.Text = ""
+		guessTextBox.Text = ""
+	end
 
 	local localPlayerId = localPlayer.UserId
 	local opponentId = roundState.playerOneId
@@ -231,22 +251,52 @@ local function onRoundStateChanged(roundState)
 	playerLockedLabel.Text = "Your locked: " .. formatLockedPositions(localLockedPositions)
 	opponentLockedLabel.Text = "Opponent locked: " .. formatLockedPositions(opponentLockedPositions)
 
-	if roundState.currentTurn then
-		onTurnChanged(roundState.currentTurn)
-	elseif hasSubmittedSecret then
-		statusLabel.Text = "Waiting for opponent secret"
+	if roundState.gameState == GAME_STATES.WaitingForPlayers then
+		statusLabel.Text = "Waiting for another player"
 		turnLabel.Text = "Turn: waiting"
-		refreshGuessControls()
-	else
-		statusLabel.Text = "Enter your secret"
-		turnLabel.Text = "Turn: waiting"
-		refreshGuessControls()
-	end
+		gameOverLabel.Text = ""
+		hasSubmittedSecret = false
+		bothSecretsSubmitted = false
+		setSecretControlsEnabled(false)
+		setGuessControlsEnabled(false)
+		setRestartControlsEnabled(false)
+	elseif roundState.gameState == GAME_STATES.WaitingForRematch then
+		local rematchReadyByPlayerId = roundState.rematchReadyByPlayerId or {}
+		local isReadyForRematch = rematchReadyByPlayerId[tostring(localPlayerId)] == true
 
-	if roundState.winner then
+		if isReadyForRematch then
+			statusLabel.Text = "Waiting for opponent to play again"
+		else
+			statusLabel.Text = "Opponent wants to play again"
+		end
+
+		turnLabel.Text = "Turn: waiting"
+		setSecretControlsEnabled(false)
+		setGuessControlsEnabled(false)
+		setRestartControlsEnabled(not isReadyForRematch)
+	elseif roundState.gameState == GAME_STATES.WaitingForSecrets then
+		turnLabel.Text = "Turn: waiting"
+		gameOverLabel.Text = ""
+		bothSecretsSubmitted = false
+
+		if hasSubmittedSecret then
+			statusLabel.Text = "Waiting for opponent secret"
+			setSecretControlsEnabled(false)
+		else
+			statusLabel.Text = "Enter your secret"
+			setSecretControlsEnabled(true)
+		end
+
+		setGuessControlsEnabled(false)
+		setRestartControlsEnabled(false)
+	elseif roundState.gameState == GAME_STATES.InProgress and roundState.currentTurn then
+		onTurnChanged(roundState.currentTurn)
+		setSecretControlsEnabled(false)
+		setRestartControlsEnabled(false)
+	elseif roundState.gameState == GAME_STATES.RoundOver and roundState.winner then
 		onGameOver(roundState.winner)
 	else
-		gameOverLabel.Text = ""
+		refreshGuessControls()
 	end
 end
 
@@ -299,15 +349,16 @@ submitGuessButton.MouseButton1Click:Connect(function()
 end)
 
 restartButton.MouseButton1Click:Connect(function()
+	if not canRequestRematch then
+		print("[FastGuesserClient] play again ignored because rematch is not available")
+		return
+	end
+
 	print("[FastGuesserClient] restart requested")
-	hasSubmittedSecret = false
-	isGameOver = false
-	isPlayerTurn = false
-	bothSecretsSubmitted = false
-	statusLabel.Text = "Restarting round..."
-	gameOverLabel.Text = ""
+	statusLabel.Text = "Waiting for opponent to play again"
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
+	setRestartControlsEnabled(false)
 	RemoteEvents.RestartRequested:FireServer()
 end)
 

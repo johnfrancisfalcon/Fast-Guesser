@@ -7,10 +7,29 @@ print("[FastGuesser] bootstrap started")
 local MatchService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("MatchService"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
+local GAME_STATES = {
+	WaitingForPlayers = "WaitingForPlayers",
+	WaitingForSecrets = "WaitingForSecrets",
+	InProgress = "InProgress",
+	RoundOver = "RoundOver",
+	WaitingForRematch = "WaitingForRematch",
+}
+
 local prototypePlayers = {}
 local prototypeMatchId = nil
 local secretRequestLoopStarted = false
 local secretRequestToken = 0
+local currentGameState = GAME_STATES.WaitingForPlayers
+local rematchReadyByPlayerId = {}
+
+local function setGameState(nextGameState)
+	if currentGameState == nextGameState then
+		return
+	end
+
+	print("[FastGuesser] state", currentGameState, "->", nextGameState)
+	currentGameState = nextGameState
+end
 
 local function getPrototypeMatch()
 	if not prototypeMatchId then
@@ -45,29 +64,45 @@ local function hasSubmittedSecret(player)
 end
 
 local function buildRoundState(match)
-	local playerOneId = match.players[1]
-	local playerTwoId = match.players[2]
+	local playerOneId = nil
+	local playerTwoId = nil
+	local currentTurn = nil
+	local winner = nil
+	local lockedPositionsByPlayerId = {}
+
+	if prototypePlayers[1] then
+		playerOneId = prototypePlayers[1].UserId
+	end
+
+	if prototypePlayers[2] then
+		playerTwoId = prototypePlayers[2].UserId
+	end
+
+	if match then
+		playerOneId = match.players[1]
+		playerTwoId = match.players[2]
+		currentTurn = match.currentTurn
+		winner = match.winner
+
+		-- Use string keys so the dictionary is stable over RemoteEvents.
+		lockedPositionsByPlayerId[tostring(playerOneId)] = match.lockedPositions[playerOneId]
+		lockedPositionsByPlayerId[tostring(playerTwoId)] = match.lockedPositions[playerTwoId]
+	end
 
 	return {
+		gameState = currentGameState,
+		roundId = prototypeMatchId,
 		playerOneId = playerOneId,
 		playerTwoId = playerTwoId,
-		currentTurn = match.currentTurn,
-		winner = match.winner,
-		lockedPositionsByPlayerId = {
-			-- Use string keys so the dictionary is stable over RemoteEvents.
-			[tostring(playerOneId)] = match.lockedPositions[playerOneId],
-			[tostring(playerTwoId)] = match.lockedPositions[playerTwoId],
-		},
+		currentTurn = currentTurn,
+		winner = winner,
+		lockedPositionsByPlayerId = lockedPositionsByPlayerId,
+		rematchReadyByPlayerId = rematchReadyByPlayerId,
 	}
 end
 
 local function fireRoundStateChanged()
-	local match = getPrototypeMatch()
-	if not match then
-		return
-	end
-
-	RemoteEvents.RoundStateChanged:FireAllClients(buildRoundState(match))
+	RemoteEvents.RoundStateChanged:FireAllClients(buildRoundState(getPrototypeMatch()))
 end
 
 local function requestSecretsForPrototypePlayers(playerOne, playerTwo)
@@ -116,6 +151,8 @@ local function createPrototypeMatch()
 	end
 
 	prototypeMatchId = prototypeMatch.id
+	rematchReadyByPlayerId = {}
+	setGameState(GAME_STATES.WaitingForSecrets)
 	print("[FastGuesser] match created", prototypeMatchId, playerOne.UserId, playerTwo.UserId)
 
 	fireRoundStateChanged()
@@ -159,10 +196,33 @@ local function detectPlayer(player)
 
 	print("[FastGuesser] player detected", player.UserId)
 	table.insert(prototypePlayers, player)
+
+	if #prototypePlayers < 2 then
+		setGameState(GAME_STATES.WaitingForPlayers)
+		fireRoundStateChanged()
+	end
+
 	tryStartPrototypeMatch()
 end
 
 Players.PlayerAdded:Connect(detectPlayer)
+Players.PlayerRemoving:Connect(function(player)
+	for index, prototypePlayer in ipairs(prototypePlayers) do
+		if prototypePlayer == player then
+			table.remove(prototypePlayers, index)
+			break
+		end
+	end
+
+	prototypeMatchId = nil
+	rematchReadyByPlayerId = {}
+	setGameState(GAME_STATES.WaitingForPlayers)
+	secretRequestToken += 1
+	secretRequestLoopStarted = false
+
+	print("[FastGuesser] player removed", player.UserId)
+	fireRoundStateChanged()
+end)
 
 for _, player in ipairs(Players:GetPlayers()) do
 	detectPlayer(player)
@@ -182,14 +242,23 @@ RemoteEvents.SecretSubmitted.OnServerEvent:Connect(function(player, secret)
 
 	local match = getPrototypeMatch()
 	if match and match.currentTurn then
+		setGameState(GAME_STATES.InProgress)
 		fireRoundStateChanged()
 		RemoteEvents.TurnChanged:FireAllClients(match.currentTurn)
+	else
+		setGameState(GAME_STATES.WaitingForSecrets)
+		fireRoundStateChanged()
 	end
 end)
 
 -- Client -> server: player submits a guess string.
 RemoteEvents.GuessSubmitted.OnServerEvent:Connect(function(player, guess)
 	print("[FastGuesser] guess submitted", player.UserId, guess)
+
+	if currentGameState ~= GAME_STATES.InProgress then
+		warn("Cannot submit guess unless round is in progress.")
+		return
+	end
 
 	local ok, result = submitGuess(player.UserId, guess)
 	if not ok then
@@ -205,9 +274,11 @@ RemoteEvents.GuessSubmitted.OnServerEvent:Connect(function(player, guess)
 	end
 
 	if match.winner then
+		setGameState(GAME_STATES.RoundOver)
 		RemoteEvents.GameOver:FireAllClients(match.winner)
 		fireRoundStateChanged()
 	else
+		setGameState(GAME_STATES.InProgress)
 		fireRoundStateChanged()
 		RemoteEvents.TurnChanged:FireAllClients(match.currentTurn)
 	end
@@ -222,7 +293,28 @@ RemoteEvents.RestartRequested.OnServerEvent:Connect(function(player)
 		return
 	end
 
+	if currentGameState ~= GAME_STATES.RoundOver and currentGameState ~= GAME_STATES.WaitingForRematch then
+		warn("Restart is only available after the round is over.")
+		return
+	end
+
+	rematchReadyByPlayerId[tostring(player.UserId)] = true
+	print("[FastGuesser] rematch ready", player.UserId)
+
+	local playerOne = prototypePlayers[1]
+	local playerTwo = prototypePlayers[2]
+	local bothPlayersReady = rematchReadyByPlayerId[tostring(playerOne.UserId)]
+		and rematchReadyByPlayerId[tostring(playerTwo.UserId)]
+
+	if not bothPlayersReady then
+		setGameState(GAME_STATES.WaitingForRematch)
+		fireRoundStateChanged()
+		return
+	end
+
+	print("[FastGuesser] rematch ready complete")
 	prototypeMatchId = nil
+	secretRequestToken += 1
 	secretRequestLoopStarted = false
 
 	createPrototypeMatch()
