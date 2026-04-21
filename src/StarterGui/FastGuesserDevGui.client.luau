@@ -16,11 +16,15 @@ local GAME_STATES = {
 
 print("[FastGuesserClient] started", localPlayer.UserId)
 
-local function createLabel(parent, name, text, y, height)
+local function createLabel(parent, name, text, y, height, x, width)
 	local label = Instance.new("TextLabel")
 	label.Name = name
-	label.Size = UDim2.new(1, -24, 0, height)
-	label.Position = UDim2.fromOffset(12, y)
+	if width then
+		label.Size = UDim2.fromOffset(width, height)
+	else
+		label.Size = UDim2.new(1, -24, 0, height)
+	end
+	label.Position = UDim2.fromOffset(x or 12, y)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.SourceSans
 	label.Text = text
@@ -65,11 +69,18 @@ local function createButton(parent, name, text, x, y)
 	return button
 end
 
+local function createSectionTitle(parent, text, x, y, width)
+	local label = createLabel(parent, text .. "SectionLabel", text, y, 22, x, width)
+	label.Font = Enum.Font.SourceSansBold
+	label.TextSize = 18
+	return label
+end
+
 local function getOrCreateDevGui()
 	local existingGui = playerGui:FindFirstChild(SCREEN_GUI_NAME)
 	if existingGui then
 		local existingFrame = existingGui:FindFirstChild("MainFrame")
-		if existingFrame and existingFrame:FindFirstChild("RestartButton") then
+		if existingFrame and existingFrame:FindFirstChild("RestartButton") and existingFrame:FindFirstChild("GuessHistoryFrame") then
 			return existingGui
 		end
 
@@ -84,26 +95,59 @@ local function getOrCreateDevGui()
 
 	local frame = Instance.new("Frame")
 	frame.Name = "MainFrame"
-	frame.Size = UDim2.fromOffset(360, 440)
+	frame.Size = UDim2.fromOffset(720, 520)
 	frame.Position = UDim2.fromOffset(24, 24)
 	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 	frame.BorderSizePixel = 0
 	frame.Parent = screenGui
 
-	createLabel(frame, "TitleLabel", "Fast Guesser Dev Test", 12, 32)
-	createLabel(frame, "StatusLabel", "Waiting for another player", 50, 44)
+	createLabel(frame, "TitleLabel", "Fast Guesser", 12, 32)
 
-	createTextBox(frame, "SecretTextBox", "4-digit secret", 12, 108)
-	createButton(frame, "SubmitSecretButton", "Submit Secret", 206, 108)
+	-- Match status section.
+	createSectionTitle(frame, "Match Status", 12, 52, 320)
+	createLabel(frame, "StatusLabel", "Waiting for another player", 78, 36, 12, 320)
 
-	createTextBox(frame, "GuessTextBox", "4-digit guess", 12, 158)
-	createButton(frame, "SubmitGuessButton", "Submit Guess", 206, 158)
+	-- Secret section.
+	createSectionTitle(frame, "Secret", 12, 124, 320)
+	createTextBox(frame, "SecretTextBox", "4-digit secret", 12, 152)
+	createButton(frame, "SubmitSecretButton", "Submit Secret", 206, 152)
 
-	createLabel(frame, "PlayerLockedLabel", "Your locked: _ _ _ _", 212, 32)
-	createLabel(frame, "OpponentLockedLabel", "Opponent locked: _ _ _ _", 248, 32)
-	createLabel(frame, "TurnLabel", "Turn: waiting", 284, 32)
-	createLabel(frame, "GameOverLabel", "", 320, 48)
-	createButton(frame, "RestartButton", "Play Again", 206, 382)
+	-- Guess section.
+	createSectionTitle(frame, "Guess", 12, 204, 320)
+	createTextBox(frame, "GuessTextBox", "4-digit guess", 12, 232)
+	createButton(frame, "SubmitGuessButton", "Submit Guess", 206, 232)
+
+	-- Turn indicator section.
+	createSectionTitle(frame, "Turn", 12, 284, 320)
+	createLabel(frame, "TurnLabel", "Turn: waiting", 310, 28, 12, 320)
+
+	-- Locked digit sections.
+	createSectionTitle(frame, "Locked Digits", 12, 356, 320)
+	createLabel(frame, "PlayerLockedLabel", "Your locked: _ _ _ _", 382, 28, 12, 320)
+	createLabel(frame, "OpponentLockedLabel", "Opponent locked: _ _ _ _", 414, 28, 12, 320)
+
+	-- Game result and rematch section.
+	createSectionTitle(frame, "Result", 12, 458, 180)
+	createLabel(frame, "GameOverLabel", "", 484, 28, 12, 180)
+	createButton(frame, "RestartButton", "Play Again", 206, 476)
+
+	-- Guess history section.
+	createSectionTitle(frame, "Your Guess History", 380, 52, 300)
+	local historyFrame = Instance.new("ScrollingFrame")
+	historyFrame.Name = "GuessHistoryFrame"
+	historyFrame.Size = UDim2.fromOffset(300, 420)
+	historyFrame.Position = UDim2.fromOffset(380, 82)
+	historyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	historyFrame.BorderSizePixel = 0
+	historyFrame.CanvasSize = UDim2.fromOffset(0, 0)
+	historyFrame.ScrollBarThickness = 8
+	historyFrame.Parent = frame
+
+	local historyList = Instance.new("UIListLayout")
+	historyList.Name = "GuessHistoryList"
+	historyList.Padding = UDim.new(0, 4)
+	historyList.SortOrder = Enum.SortOrder.LayoutOrder
+	historyList.Parent = historyFrame
 
 	return screenGui
 end
@@ -121,6 +165,8 @@ local opponentLockedLabel = mainFrame:WaitForChild("OpponentLockedLabel")
 local turnLabel = mainFrame:WaitForChild("TurnLabel")
 local gameOverLabel = mainFrame:WaitForChild("GameOverLabel")
 local restartButton = mainFrame:WaitForChild("RestartButton")
+local guessHistoryFrame = mainFrame:WaitForChild("GuessHistoryFrame")
+local guessHistoryList = guessHistoryFrame:WaitForChild("GuessHistoryList")
 
 local hasSubmittedSecret = false
 local isGameOver = false
@@ -130,6 +176,7 @@ local secretControlsEnabled = false
 local guessControlsEnabled = false
 local canRequestRematch = false
 local currentRoundId = nil
+local guessHistoryCount = 0
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
@@ -144,6 +191,40 @@ local function formatLockedPositions(lockedPositions)
 
 	return table.concat(values, " ")
 end
+
+local function clearGuessHistory()
+	for _, child in ipairs(guessHistoryFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+
+	guessHistoryCount = 0
+	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, 0)
+end
+
+local function addGuessHistoryEntry(result)
+	guessHistoryCount += 1
+
+	local entry = Instance.new("TextLabel")
+	entry.Name = "GuessHistoryEntry"
+	entry.Size = UDim2.new(1, -12, 0, 54)
+	entry.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	entry.BorderSizePixel = 0
+	entry.Font = Enum.Font.SourceSans
+	entry.TextColor3 = Color3.fromRGB(255, 255, 255)
+	entry.TextSize = 16
+	entry.TextWrapped = true
+	entry.TextXAlignment = Enum.TextXAlignment.Left
+	entry.TextYAlignment = Enum.TextYAlignment.Center
+	entry.Text = tostring(guessHistoryCount) .. ". Guess: " .. tostring(result.guess)
+		.. "\nFeedback: " .. formatLockedPositions(result.matches)
+	entry.Parent = guessHistoryFrame
+end
+
+guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, guessHistoryList.AbsoluteContentSize.Y + 12)
+end)
 
 local function setSecretControlsEnabled(enabled)
 	secretControlsEnabled = enabled
@@ -211,6 +292,7 @@ local function onGuessResult(result)
 	print("[FastGuesserClient] guess result")
 	statusLabel.Text = "Guess submitted"
 	guessTextBox.Text = ""
+	addGuessHistoryEntry(result)
 end
 
 local function onGameOver(winnerId)
@@ -234,6 +316,7 @@ local function onRoundStateChanged(roundState)
 		bothSecretsSubmitted = false
 		secretTextBox.Text = ""
 		guessTextBox.Text = ""
+		clearGuessHistory()
 	end
 
 	local localPlayerId = localPlayer.UserId
@@ -257,6 +340,7 @@ local function onRoundStateChanged(roundState)
 		gameOverLabel.Text = ""
 		hasSubmittedSecret = false
 		bothSecretsSubmitted = false
+		clearGuessHistory()
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 		setRestartControlsEnabled(false)

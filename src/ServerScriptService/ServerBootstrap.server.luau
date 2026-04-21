@@ -183,6 +183,26 @@ local function submitGuess(playerId, guess)
 	return MatchService.submitGuess(prototypeMatchId, playerId, guess)
 end
 
+local function toDensePositionTable(positionTable)
+	local result = {}
+
+	for i = 1, 4 do
+		result[i] = positionTable[i] or "_"
+	end
+
+	return result
+end
+
+local function buildGuessResultPayload(result)
+	return {
+		playerId = result.playerId,
+		guess = result.guess,
+		matches = toDensePositionTable(result.matches),
+		lockedPositions = toDensePositionTable(result.lockedPositions),
+		isSolved = result.isSolved,
+	}
+end
+
 local function detectPlayer(player)
 	if #prototypePlayers >= 2 then
 		return
@@ -266,7 +286,7 @@ RemoteEvents.GuessSubmitted.OnServerEvent:Connect(function(player, guess)
 		return
 	end
 
-	RemoteEvents.GuessResult:FireClient(player, result)
+	RemoteEvents.GuessResult:FireClient(player, buildGuessResultPayload(result))
 
 	local match = getPrototypeMatch()
 	if not match then
