@@ -1,7 +1,7 @@
--- Lune-compatible path (replace with Roblox service path before Studio sync)
-local MatchService = require("../Services/MatchService")
--- Lune-compatible path (replace with Roblox service path before Studio sync)
-local FeedbackLogic = require("../../ReplicatedStorage/Shared/FeedbackLogic")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local MatchService = require(script.Parent.Parent.Services.MatchService)
+local FeedbackLogic = require(ReplicatedStorage.Shared.FeedbackLogic)
 
 local PLAYER_A_ID = 101
 local PLAYER_B_ID = 202
