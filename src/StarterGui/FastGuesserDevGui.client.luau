@@ -1,23 +1,15 @@
-local guiParent = script.Parent
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-if guiParent:FindFirstChild("FastGuesserDevGui") then
-	return
-end
+local localPlayer = Players.LocalPlayer
+local playerGui = script.Parent
+local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FastGuesserDevGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = guiParent
+local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.fromOffset(360, 390)
-mainFrame.Position = UDim2.fromOffset(24, 24)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
+print("[FastGuesserClient] started", localPlayer.UserId)
 
-local function createLabel(name, text, y, height)
+local function createLabel(parent, name, text, y, height)
 	local label = Instance.new("TextLabel")
 	label.Name = name
 	label.Size = UDim2.new(1, -24, 0, height)
@@ -29,12 +21,12 @@ local function createLabel(name, text, y, height)
 	label.TextSize = 20
 	label.TextWrapped = true
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = mainFrame
+	label.Parent = parent
 
 	return label
 end
 
-local function createTextBox(name, placeholderText, x, y)
+local function createTextBox(parent, name, placeholderText, x, y)
 	local textBox = Instance.new("TextBox")
 	textBox.Name = name
 	textBox.Size = UDim2.fromOffset(180, 36)
@@ -46,12 +38,12 @@ local function createTextBox(name, placeholderText, x, y)
 	textBox.TextColor3 = Color3.fromRGB(20, 20, 20)
 	textBox.TextSize = 20
 	textBox.ClearTextOnFocus = false
-	textBox.Parent = mainFrame
+	textBox.Parent = parent
 
 	return textBox
 end
 
-local function createButton(name, text, x, y)
+local function createButton(parent, name, text, x, y)
 	local button = Instance.new("TextButton")
 	button.Name = name
 	button.Size = UDim2.fromOffset(130, 36)
@@ -61,21 +53,179 @@ local function createButton(name, text, x, y)
 	button.Text = text
 	button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	button.TextSize = 18
-	button.Parent = mainFrame
+	button.Parent = parent
 
 	return button
 end
 
-createLabel("TitleLabel", "Fast Guesser Dev Test", 12, 32)
-createLabel("StatusLabel", "Waiting for a match...", 50, 44)
+local function getOrCreateDevGui()
+	local existingGui = playerGui:FindFirstChild(SCREEN_GUI_NAME)
+	if existingGui then
+		return existingGui
+	end
 
-createTextBox("SecretTextBox", "4-digit secret", 12, 108)
-createButton("SubmitSecretButton", "Submit Secret", 206, 108)
+	-- Temporary developer UI for Studio multiplayer tests.
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = SCREEN_GUI_NAME
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = playerGui
 
-createTextBox("GuessTextBox", "4-digit guess", 12, 158)
-createButton("SubmitGuessButton", "Submit Guess", 206, 158)
+	local frame = Instance.new("Frame")
+	frame.Name = "MainFrame"
+	frame.Size = UDim2.fromOffset(360, 390)
+	frame.Position = UDim2.fromOffset(24, 24)
+	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	frame.BorderSizePixel = 0
+	frame.Parent = screenGui
 
-createLabel("PlayerLockedLabel", "Your locked: _ _ _ _", 212, 32)
-createLabel("OpponentLockedLabel", "Opponent locked: _ _ _ _", 248, 32)
-createLabel("TurnLabel", "Turn: waiting", 284, 32)
-createLabel("GameOverLabel", "", 320, 48)
+	createLabel(frame, "TitleLabel", "Fast Guesser Dev Test", 12, 32)
+	createLabel(frame, "StatusLabel", "Waiting for a match...", 50, 44)
+
+	createTextBox(frame, "SecretTextBox", "4-digit secret", 12, 108)
+	createButton(frame, "SubmitSecretButton", "Submit Secret", 206, 108)
+
+	createTextBox(frame, "GuessTextBox", "4-digit guess", 12, 158)
+	createButton(frame, "SubmitGuessButton", "Submit Guess", 206, 158)
+
+	createLabel(frame, "PlayerLockedLabel", "Your locked: _ _ _ _", 212, 32)
+	createLabel(frame, "OpponentLockedLabel", "Opponent locked: _ _ _ _", 248, 32)
+	createLabel(frame, "TurnLabel", "Turn: waiting", 284, 32)
+	createLabel(frame, "GameOverLabel", "", 320, 48)
+
+	return screenGui
+end
+
+local devGui = getOrCreateDevGui()
+local mainFrame = devGui:WaitForChild("MainFrame")
+
+local statusLabel = mainFrame:WaitForChild("StatusLabel")
+local secretTextBox = mainFrame:WaitForChild("SecretTextBox")
+local submitSecretButton = mainFrame:WaitForChild("SubmitSecretButton")
+local guessTextBox = mainFrame:WaitForChild("GuessTextBox")
+local submitGuessButton = mainFrame:WaitForChild("SubmitGuessButton")
+local playerLockedLabel = mainFrame:WaitForChild("PlayerLockedLabel")
+local opponentLockedLabel = mainFrame:WaitForChild("OpponentLockedLabel")
+local turnLabel = mainFrame:WaitForChild("TurnLabel")
+local gameOverLabel = mainFrame:WaitForChild("GameOverLabel")
+
+local hasSubmittedSecret = false
+local isGameOver = false
+local isPlayerTurn = false
+local secretControlsEnabled = false
+local guessControlsEnabled = false
+
+local function isFourDigits(value)
+	return string.match(value, "^%d%d%d%d$") ~= nil
+end
+
+local function formatLockedPositions(lockedPositions)
+	local values = {}
+
+	for i = 1, 4 do
+		values[i] = lockedPositions[i] or "_"
+	end
+
+	return table.concat(values, " ")
+end
+
+local function setSecretControlsEnabled(enabled)
+	secretControlsEnabled = enabled
+	secretTextBox.TextEditable = enabled
+	submitSecretButton.Active = enabled
+	submitSecretButton.AutoButtonColor = enabled
+end
+
+local function setGuessControlsEnabled(enabled)
+	guessControlsEnabled = enabled
+	guessTextBox.TextEditable = enabled
+	submitGuessButton.Active = enabled
+	submitGuessButton.AutoButtonColor = enabled
+end
+
+local function refreshGuessControls()
+	setGuessControlsEnabled(hasSubmittedSecret and isPlayerTurn and not isGameOver)
+end
+
+setSecretControlsEnabled(false)
+setGuessControlsEnabled(false)
+
+local function onSecretRequested()
+	print("[FastGuesserClient] secret requested")
+	statusLabel.Text = "Enter your secret"
+	secretTextBox.Text = ""
+	setSecretControlsEnabled(true)
+end
+
+local function onTurnChanged(playerId)
+	print("[FastGuesserClient] turn changed", playerId)
+	isPlayerTurn = playerId == localPlayer.UserId
+	turnLabel.Text = "Turn: player " .. tostring(playerId)
+
+	if isPlayerTurn then
+		statusLabel.Text = "Your turn to guess"
+	else
+		statusLabel.Text = "Waiting for opponent"
+	end
+
+	refreshGuessControls()
+end
+
+local function onGuessResult(result)
+	print("[FastGuesserClient] guess result")
+	statusLabel.Text = "Guess submitted"
+	playerLockedLabel.Text = "Your locked: " .. formatLockedPositions(result.lockedPositions)
+	opponentLockedLabel.Text = "Opponent locked: not available yet"
+	guessTextBox.Text = ""
+end
+
+local function onGameOver(winnerId)
+	print("[FastGuesserClient] game over", winnerId)
+	isGameOver = true
+	gameOverLabel.Text = "Winner: " .. tostring(winnerId)
+	statusLabel.Text = "Game over"
+	setSecretControlsEnabled(false)
+	setGuessControlsEnabled(false)
+end
+
+submitSecretButton.MouseButton1Click:Connect(function()
+	if not secretControlsEnabled then
+		print("[FastGuesserClient] secret submit ignored because controls are disabled")
+		return
+	end
+
+	local secret = secretTextBox.Text
+	if not isFourDigits(secret) then
+		statusLabel.Text = "Secret must be exactly 4 digits"
+		return
+	end
+
+	hasSubmittedSecret = true
+	setSecretControlsEnabled(false)
+	statusLabel.Text = "Secret submitted"
+	print("[FastGuesserClient] secret submitted")
+	RemoteEvents.SecretSubmitted:FireServer(secret)
+	refreshGuessControls()
+end)
+
+submitGuessButton.MouseButton1Click:Connect(function()
+	if not guessControlsEnabled then
+		print("[FastGuesserClient] guess submit ignored because controls are disabled")
+		return
+	end
+
+	local guess = guessTextBox.Text
+	if not isFourDigits(guess) then
+		statusLabel.Text = "Guess must be exactly 4 digits"
+		return
+	end
+
+	statusLabel.Text = "Submitting guess..."
+	setGuessControlsEnabled(false)
+	print("[FastGuesserClient] guess submitted", guess)
+	RemoteEvents.GuessSubmitted:FireServer(guess)
+end)
+
+RemoteEvents.SecretRequested.OnClientEvent:Connect(onSecretRequested)
+RemoteEvents.TurnChanged.OnClientEvent:Connect(onTurnChanged)
+RemoteEvents.GuessResult.OnClientEvent:Connect(onGuessResult)
+RemoteEvents.GameOver.OnClientEvent:Connect(onGameOver)

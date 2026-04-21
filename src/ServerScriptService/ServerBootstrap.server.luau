@@ -2,11 +2,14 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local MatchService = require(ServerScriptService.Services.MatchService)
-local RemoteEvents = require(ReplicatedStorage.Shared.RemoteEvents)
+print("[FastGuesser] bootstrap started")
+
+local MatchService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("MatchService"))
+local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
 local prototypePlayers = {}
 local prototypeMatchId = nil
+local secretRequestLoopStarted = false
 
 local function getPrototypeMatch()
 	if not prototypeMatchId then
@@ -14,6 +17,21 @@ local function getPrototypeMatch()
 	end
 
 	return MatchService.getMatch(prototypeMatchId)
+end
+
+local function bothSecretsSubmitted()
+	local match = getPrototypeMatch()
+	if not match then
+		return false
+	end
+
+	for _, player in ipairs(prototypePlayers) do
+		if not match.secrets[player.UserId] then
+			return false
+		end
+	end
+
+	return true
 end
 
 local function tryStartPrototypeMatch()
@@ -29,10 +47,31 @@ local function tryStartPrototypeMatch()
 	end
 
 	prototypeMatchId = prototypeMatch.id
+	print("[FastGuesser] match created", prototypeMatchId, playerOne.UserId, playerTwo.UserId)
 
-	-- Ask both prototype players to enter their secret.
-	RemoteEvents.SecretRequested:FireClient(playerOne)
-	RemoteEvents.SecretRequested:FireClient(playerTwo)
+	task.spawn(function()
+		if secretRequestLoopStarted then
+			return
+		end
+
+		secretRequestLoopStarted = true
+
+		-- Ask both prototype players to enter their secret. Repeat briefly so Studio
+		-- clients that are still starting up do not miss the one-time request.
+		for _ = 1, 10 do
+			if bothSecretsSubmitted() then
+				return
+			end
+
+			print("[FastGuesser] secret requested", playerOne.UserId)
+			RemoteEvents.SecretRequested:FireClient(playerOne)
+
+			print("[FastGuesser] secret requested", playerTwo.UserId)
+			RemoteEvents.SecretRequested:FireClient(playerTwo)
+
+			task.wait(1)
+		end
+	end)
 end
 
 local function setPlayerSecret(playerId, secret)
@@ -51,25 +90,34 @@ local function submitGuess(playerId, guess)
 	return MatchService.submitGuess(prototypeMatchId, playerId, guess)
 end
 
-Players.PlayerAdded:Connect(function(player)
+local function detectPlayer(player)
 	if #prototypePlayers >= 2 then
 		return
 	end
 
+	for _, prototypePlayer in ipairs(prototypePlayers) do
+		if prototypePlayer == player then
+			return
+		end
+	end
+
+	print("[FastGuesser] player detected", player.UserId)
 	table.insert(prototypePlayers, player)
 	tryStartPrototypeMatch()
-end)
+end
+
+Players.PlayerAdded:Connect(detectPlayer)
 
 for _, player in ipairs(Players:GetPlayers()) do
-	if #prototypePlayers < 2 then
-		table.insert(prototypePlayers, player)
-	end
+	detectPlayer(player)
 end
 
 tryStartPrototypeMatch()
 
 -- Client -> server: player submits their secret string.
 RemoteEvents.SecretSubmitted.OnServerEvent:Connect(function(player, secret)
+	print("[FastGuesser] secret submitted", player.UserId)
+
 	local ok, message = setPlayerSecret(player.UserId, secret)
 	if not ok then
 		warn(message)
@@ -84,6 +132,8 @@ end)
 
 -- Client -> server: player submits a guess string.
 RemoteEvents.GuessSubmitted.OnServerEvent:Connect(function(player, guess)
+	print("[FastGuesser] guess submitted", player.UserId, guess)
+
 	local ok, result = submitGuess(player.UserId, guess)
 	if not ok then
 		warn(result)
