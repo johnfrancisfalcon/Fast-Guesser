@@ -250,6 +250,23 @@ local function refreshGuessControls()
 	setGuessControlsEnabled(bothSecretsSubmitted and isPlayerTurn and not isGameOver)
 end
 
+local function resetRoundUi()
+	hasSubmittedSecret = false
+	isGameOver = false
+	isPlayerTurn = false
+	bothSecretsSubmitted = false
+	secretTextBox.Text = ""
+	guessTextBox.Text = ""
+	gameOverLabel.Text = ""
+	playerLockedLabel.Text = "Your locked: _ _ _ _"
+	opponentLockedLabel.Text = "Opponent locked: _ _ _ _"
+	turnLabel.Text = "Turn: waiting"
+	clearGuessHistory()
+	setSecretControlsEnabled(false)
+	setGuessControlsEnabled(false)
+	setRestartControlsEnabled(false)
+end
+
 setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
 setRestartControlsEnabled(false)
@@ -260,16 +277,8 @@ local function onSecretRequested()
 		return
 	end
 
-	hasSubmittedSecret = false
-	isGameOver = false
-	isPlayerTurn = false
-	bothSecretsSubmitted = false
+	-- Secret requests can repeat while the server waits; never clear secret text here.
 	statusLabel.Text = "Enter your secret"
-	guessTextBox.Text = ""
-	gameOverLabel.Text = ""
-	playerLockedLabel.Text = "Your locked: _ _ _ _"
-	opponentLockedLabel.Text = "Opponent locked: _ _ _ _"
-	turnLabel.Text = "Turn: waiting"
 	setSecretControlsEnabled(true)
 	setGuessControlsEnabled(false)
 end
@@ -310,13 +319,7 @@ local function onRoundStateChanged(roundState)
 
 	if roundState.roundId and roundState.roundId ~= currentRoundId then
 		currentRoundId = roundState.roundId
-		hasSubmittedSecret = false
-		isGameOver = false
-		isPlayerTurn = false
-		bothSecretsSubmitted = false
-		secretTextBox.Text = ""
-		guessTextBox.Text = ""
-		clearGuessHistory()
+		resetRoundUi()
 	end
 
 	local localPlayerId = localPlayer.UserId
@@ -335,12 +338,8 @@ local function onRoundStateChanged(roundState)
 	opponentLockedLabel.Text = "Opponent locked: " .. formatLockedPositions(opponentLockedPositions)
 
 	if roundState.gameState == GAME_STATES.WaitingForPlayers then
-		statusLabel.Text = "Waiting for another player"
-		turnLabel.Text = "Turn: waiting"
-		gameOverLabel.Text = ""
-		hasSubmittedSecret = false
-		bothSecretsSubmitted = false
-		clearGuessHistory()
+		resetRoundUi()
+		statusLabel.Text = "Waiting for opponent"
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 		setRestartControlsEnabled(false)
@@ -364,7 +363,7 @@ local function onRoundStateChanged(roundState)
 		bothSecretsSubmitted = false
 
 		if hasSubmittedSecret then
-			statusLabel.Text = "Waiting for opponent secret"
+			statusLabel.Text = "Opponent is entering secret"
 			setSecretControlsEnabled(false)
 		else
 			statusLabel.Text = "Enter your secret"
@@ -403,7 +402,7 @@ submitSecretButton.MouseButton1Click:Connect(function()
 
 	hasSubmittedSecret = true
 	setSecretControlsEnabled(false)
-	statusLabel.Text = "Waiting for opponent secret"
+	statusLabel.Text = "Opponent is entering secret"
 	print("[FastGuesserClient] secret submitted")
 	RemoteEvents.SecretSubmitted:FireServer(secret)
 	refreshGuessControls()
