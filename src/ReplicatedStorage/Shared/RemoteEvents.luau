@@ -50,4 +50,7 @@ return {
 
 	-- Server -> all clients. Payload: full round state for both players.
 	RoundStateChanged = getOrCreateRemoteEvent("RoundStateChanged"),
+
+	-- Client -> server. Payload: none; requests a new prototype round.
+	RestartRequested = getOrCreateRemoteEvent("RestartRequested"),
 }

@@ -61,7 +61,12 @@ end
 local function getOrCreateDevGui()
 	local existingGui = playerGui:FindFirstChild(SCREEN_GUI_NAME)
 	if existingGui then
-		return existingGui
+		local existingFrame = existingGui:FindFirstChild("MainFrame")
+		if existingFrame and existingFrame:FindFirstChild("RestartButton") then
+			return existingGui
+		end
+
+		existingGui:Destroy()
 	end
 
 	-- Temporary developer UI for Studio multiplayer tests.
@@ -72,14 +77,14 @@ local function getOrCreateDevGui()
 
 	local frame = Instance.new("Frame")
 	frame.Name = "MainFrame"
-	frame.Size = UDim2.fromOffset(360, 390)
+	frame.Size = UDim2.fromOffset(360, 440)
 	frame.Position = UDim2.fromOffset(24, 24)
 	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 	frame.BorderSizePixel = 0
 	frame.Parent = screenGui
 
 	createLabel(frame, "TitleLabel", "Fast Guesser Dev Test", 12, 32)
-	createLabel(frame, "StatusLabel", "Waiting for a match...", 50, 44)
+	createLabel(frame, "StatusLabel", "Waiting for players", 50, 44)
 
 	createTextBox(frame, "SecretTextBox", "4-digit secret", 12, 108)
 	createButton(frame, "SubmitSecretButton", "Submit Secret", 206, 108)
@@ -91,6 +96,7 @@ local function getOrCreateDevGui()
 	createLabel(frame, "OpponentLockedLabel", "Opponent locked: _ _ _ _", 248, 32)
 	createLabel(frame, "TurnLabel", "Turn: waiting", 284, 32)
 	createLabel(frame, "GameOverLabel", "", 320, 48)
+	createButton(frame, "RestartButton", "Restart Round", 206, 382)
 
 	return screenGui
 end
@@ -107,10 +113,12 @@ local playerLockedLabel = mainFrame:WaitForChild("PlayerLockedLabel")
 local opponentLockedLabel = mainFrame:WaitForChild("OpponentLockedLabel")
 local turnLabel = mainFrame:WaitForChild("TurnLabel")
 local gameOverLabel = mainFrame:WaitForChild("GameOverLabel")
+local restartButton = mainFrame:WaitForChild("RestartButton")
 
 local hasSubmittedSecret = false
 local isGameOver = false
 local isPlayerTurn = false
+local bothSecretsSubmitted = false
 local secretControlsEnabled = false
 local guessControlsEnabled = false
 
@@ -142,18 +150,38 @@ local function setGuessControlsEnabled(enabled)
 	submitGuessButton.AutoButtonColor = enabled
 end
 
+local function setRestartControlsEnabled(enabled)
+	restartButton.Active = enabled
+	restartButton.AutoButtonColor = enabled
+end
+
 local function refreshGuessControls()
-	setGuessControlsEnabled(hasSubmittedSecret and isPlayerTurn and not isGameOver)
+	setGuessControlsEnabled(bothSecretsSubmitted and isPlayerTurn and not isGameOver)
 end
 
 setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
+setRestartControlsEnabled(true)
 
 local function onSecretRequested()
 	print("[FastGuesserClient] secret requested")
+	if hasSubmittedSecret then
+		return
+	end
+
+	hasSubmittedSecret = false
+	isGameOver = false
+	isPlayerTurn = false
+	bothSecretsSubmitted = false
 	statusLabel.Text = "Enter your secret"
 	secretTextBox.Text = ""
+	guessTextBox.Text = ""
+	gameOverLabel.Text = ""
+	playerLockedLabel.Text = "Your locked: _ _ _ _"
+	opponentLockedLabel.Text = "Opponent locked: _ _ _ _"
+	turnLabel.Text = "Turn: waiting"
 	setSecretControlsEnabled(true)
+	setGuessControlsEnabled(false)
 end
 
 local function onTurnChanged(playerId)
@@ -162,9 +190,9 @@ local function onTurnChanged(playerId)
 	turnLabel.Text = "Turn: player " .. tostring(playerId)
 
 	if isPlayerTurn then
-		statusLabel.Text = "Your turn to guess"
+		statusLabel.Text = "Your turn"
 	else
-		statusLabel.Text = "Waiting for opponent"
+		statusLabel.Text = "Opponent's turn"
 	end
 
 	refreshGuessControls()
@@ -198,11 +226,21 @@ local function onRoundStateChanged(roundState)
 	local localLockedPositions = lockedPositionsByPlayerId[tostring(localPlayerId)] or {}
 	local opponentLockedPositions = lockedPositionsByPlayerId[tostring(opponentId)] or {}
 
+	isGameOver = roundState.winner ~= nil
+	bothSecretsSubmitted = roundState.currentTurn ~= nil
 	playerLockedLabel.Text = "Your locked: " .. formatLockedPositions(localLockedPositions)
 	opponentLockedLabel.Text = "Opponent locked: " .. formatLockedPositions(opponentLockedPositions)
 
 	if roundState.currentTurn then
 		onTurnChanged(roundState.currentTurn)
+	elseif hasSubmittedSecret then
+		statusLabel.Text = "Waiting for opponent secret"
+		turnLabel.Text = "Turn: waiting"
+		refreshGuessControls()
+	else
+		statusLabel.Text = "Enter your secret"
+		turnLabel.Text = "Turn: waiting"
+		refreshGuessControls()
 	end
 
 	if roundState.winner then
@@ -218,6 +256,11 @@ submitSecretButton.MouseButton1Click:Connect(function()
 		return
 	end
 
+	if isGameOver then
+		print("[FastGuesserClient] secret submit ignored because game is over")
+		return
+	end
+
 	local secret = secretTextBox.Text
 	if not isFourDigits(secret) then
 		statusLabel.Text = "Secret must be exactly 4 digits"
@@ -226,7 +269,7 @@ submitSecretButton.MouseButton1Click:Connect(function()
 
 	hasSubmittedSecret = true
 	setSecretControlsEnabled(false)
-	statusLabel.Text = "Secret submitted"
+	statusLabel.Text = "Waiting for opponent secret"
 	print("[FastGuesserClient] secret submitted")
 	RemoteEvents.SecretSubmitted:FireServer(secret)
 	refreshGuessControls()
@@ -235,6 +278,11 @@ end)
 submitGuessButton.MouseButton1Click:Connect(function()
 	if not guessControlsEnabled then
 		print("[FastGuesserClient] guess submit ignored because controls are disabled")
+		return
+	end
+
+	if isGameOver then
+		print("[FastGuesserClient] guess submit ignored because game is over")
 		return
 	end
 
@@ -248,6 +296,19 @@ submitGuessButton.MouseButton1Click:Connect(function()
 	setGuessControlsEnabled(false)
 	print("[FastGuesserClient] guess submitted", guess)
 	RemoteEvents.GuessSubmitted:FireServer(guess)
+end)
+
+restartButton.MouseButton1Click:Connect(function()
+	print("[FastGuesserClient] restart requested")
+	hasSubmittedSecret = false
+	isGameOver = false
+	isPlayerTurn = false
+	bothSecretsSubmitted = false
+	statusLabel.Text = "Restarting round..."
+	gameOverLabel.Text = ""
+	setSecretControlsEnabled(false)
+	setGuessControlsEnabled(false)
+	RemoteEvents.RestartRequested:FireServer()
 end)
 
 RemoteEvents.SecretRequested.OnClientEvent:Connect(onSecretRequested)
