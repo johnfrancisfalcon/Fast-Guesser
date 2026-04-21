@@ -1,7 +1,7 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local FeedbackLogic = require(ReplicatedStorage.Shared.FeedbackLogic)
-local GuessValidator = require(script.Parent.GuessValidator)
+-- Lune-compatible path (replace with Roblox service path before Studio sync)
+local FeedbackLogic = require("../../ReplicatedStorage/Shared/FeedbackLogic")
+-- Lune-compatible path (replace with Roblox service path before Studio sync)
+local GuessValidator = require("./GuessValidator")
 
 local MatchService = {}
 
