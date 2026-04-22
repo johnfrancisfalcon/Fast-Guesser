@@ -5,6 +5,7 @@ local GuessValidator = require(script.Parent.GuessValidator)
 
 local MatchService = {}
 
+local TIE_WINNER = "Tie"
 local nextMatchId = 0
 local matches = {}
 
@@ -59,6 +60,8 @@ function MatchService.createMatch(playerOneId, playerTwoId)
 		},
 		currentTurn = nil,
 		winner = nil,
+		pendingWinner = nil,
+		isTie = false,
 		guessHistory = {},
 	}
 
@@ -69,6 +72,10 @@ end
 
 function MatchService.getMatch(matchId)
 	return matches[matchId]
+end
+
+function MatchService.destroyMatch(matchId)
+	matches[matchId] = nil
 end
 
 function MatchService.getCurrentTurn(matchId)
@@ -157,8 +164,19 @@ function MatchService.submitGuess(matchId, playerId, guess)
 
 	table.insert(match.guessHistory, result)
 
-	if result.isSolved then
+	if result.isSolved and match.pendingWinner then
+		match.winner = TIE_WINNER
+		match.isTie = true
+		match.currentTurn = nil
+	elseif result.isSolved and playerId == match.players[1] then
+		match.pendingWinner = playerId
+		advanceTurn(match)
+	elseif result.isSolved then
 		match.winner = playerId
+		match.currentTurn = nil
+	elseif match.pendingWinner then
+		match.winner = match.pendingWinner
+		match.currentTurn = nil
 	else
 		advanceTurn(match)
 	end

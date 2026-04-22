@@ -45,11 +45,29 @@ return {
 	-- Server -> client. Payload: result table with feedback and locked positions.
 	GuessResult = getOrCreateRemoteEvent("GuessResult"),
 
-	-- Server -> all clients. Payload: winner playerId.
+	-- Server -> all clients. Payload: winner playerId, or "Tie".
 	GameOver = getOrCreateRemoteEvent("GameOver"),
 
 	-- Server -> all clients. Payload: full round state for both players.
 	RoundStateChanged = getOrCreateRemoteEvent("RoundStateChanged"),
+
+	-- Client -> server. Payload: none; enters the prototype lobby.
+	LobbyEntered = getOrCreateRemoteEvent("LobbyEntered"),
+
+	-- Client -> server. Payload: none; leaves the prototype lobby before a round starts.
+	LobbyLeft = getOrCreateRemoteEvent("LobbyLeft"),
+
+	-- Client -> server. Payload: boolean; changes local ready state in lobby.
+	ReadyChanged = getOrCreateRemoteEvent("ReadyChanged"),
+
+	-- Server -> all clients. Payload: prototype lobby state.
+	LobbyStateChanged = getOrCreateRemoteEvent("LobbyStateChanged"),
+
+	-- Server -> client. Payload: player lobby shell state.
+	LobbyFlowStateChanged = getOrCreateRemoteEvent("LobbyFlowStateChanged"),
+
+	-- Client -> server. Payload: none; opts into the post-game rematch flow.
+	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),
 
 	-- Client -> server. Payload: none; requests a new prototype round.
 	RestartRequested = getOrCreateRemoteEvent("RestartRequested"),
