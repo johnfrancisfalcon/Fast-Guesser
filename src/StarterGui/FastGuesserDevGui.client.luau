@@ -17,17 +17,32 @@ local GAME_STATES = {
 local devGui = GuiBuilder.getOrCreate(playerGui)
 local mainFrame = devGui:WaitForChild("MainFrame")
 
-local statusLabel = mainFrame:WaitForChild("StatusLabel")
-local secretTextBox = mainFrame:WaitForChild("SecretTextBox")
-local submitSecretButton = mainFrame:WaitForChild("SubmitSecretButton")
-local guessTextBox = mainFrame:WaitForChild("GuessTextBox")
-local submitGuessButton = mainFrame:WaitForChild("SubmitGuessButton")
-local playerLockedLabel = mainFrame:WaitForChild("PlayerLockedLabel")
-local opponentLockedLabel = mainFrame:WaitForChild("OpponentLockedLabel")
-local turnLabel = mainFrame:WaitForChild("TurnLabel")
-local gameOverLabel = mainFrame:WaitForChild("GameOverLabel")
-local restartButton = mainFrame:WaitForChild("RestartButton")
-local guessHistoryFrame = mainFrame:WaitForChild("GuessHistoryFrame")
+local COLORS = {
+	enabledButton = Color3.fromRGB(61, 128, 214),
+	disabledButton = Color3.fromRGB(78, 86, 96),
+	enabledInput = Color3.fromRGB(248, 250, 252),
+	disabledInput = Color3.fromRGB(198, 204, 212),
+	enabledText = Color3.fromRGB(255, 255, 255),
+	disabledText = Color3.fromRGB(182, 190, 200),
+}
+
+local function findUi(name)
+	local instance = mainFrame:FindFirstChild(name, true)
+	assert(instance, "Missing Fast Guesser UI element: " .. name)
+	return instance
+end
+
+local statusLabel = findUi("StatusLabel")
+local secretTextBox = findUi("SecretTextBox")
+local submitSecretButton = findUi("SubmitSecretButton")
+local guessTextBox = findUi("GuessTextBox")
+local submitGuessButton = findUi("SubmitGuessButton")
+local playerLockedLabel = findUi("PlayerLockedLabel")
+local opponentLockedLabel = findUi("OpponentLockedLabel")
+local turnLabel = findUi("TurnLabel")
+local gameOverLabel = findUi("GameOverLabel")
+local restartButton = findUi("RestartButton")
+local guessHistoryFrame = findUi("GuessHistoryFrame")
 local guessHistoryList = guessHistoryFrame:WaitForChild("GuessHistoryList")
 
 local hasSubmittedSecret = false
@@ -57,17 +72,21 @@ end
 local function setButtonEnabled(button, enabled)
 	button.Active = enabled
 	button.AutoButtonColor = enabled
+	button.BackgroundColor3 = if enabled then COLORS.enabledButton else COLORS.disabledButton
+	button.TextColor3 = if enabled then COLORS.enabledText else COLORS.disabledText
 end
 
 local function setSecretControlsEnabled(enabled)
 	secretControlsEnabled = enabled
 	secretTextBox.TextEditable = enabled
+	secretTextBox.BackgroundColor3 = if enabled then COLORS.enabledInput else COLORS.disabledInput
 	setButtonEnabled(submitSecretButton, enabled)
 end
 
 local function setGuessControlsEnabled(enabled)
 	guessControlsEnabled = enabled
 	guessTextBox.TextEditable = enabled
+	guessTextBox.BackgroundColor3 = if enabled then COLORS.enabledInput else COLORS.disabledInput
 	setButtonEnabled(submitGuessButton, enabled)
 end
 
@@ -174,7 +193,7 @@ local function showWaitingForSecrets()
 	bothSecretsSubmitted = false
 
 	if hasSubmittedSecret then
-		statusLabel.Text = "Opponent is entering secret"
+		statusLabel.Text = "Waiting for both secrets"
 		setSecretControlsEnabled(false)
 	else
 		statusLabel.Text = "Enter your secret"
@@ -264,7 +283,7 @@ local function submitSecret()
 
 	hasSubmittedSecret = true
 	setSecretControlsEnabled(false)
-	statusLabel.Text = "Opponent is entering secret"
+	statusLabel.Text = "Waiting for both secrets"
 	RemoteEvents.SecretSubmitted:FireServer(secret)
 	refreshGuessControls()
 end
