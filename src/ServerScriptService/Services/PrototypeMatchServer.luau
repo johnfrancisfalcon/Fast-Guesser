@@ -352,6 +352,17 @@ end
 
 local onRestartRequested
 
+local function onPlayMatchPromptRequested(player)
+	menuByPlayerId[getPlayerKey(player)] = true
+	sessionNotice = nil
+	RemoteEvents.LobbyFlowStateChanged:FireClient(player, {
+		lobbyState = LOBBY_STATES.InLobby,
+		showMenu = true,
+	})
+	fireLobbyStateChanged()
+	fireRoundStateChanged()
+end
+
 local function onLobbyEntered(player)
 	menuByPlayerId[getPlayerKey(player)] = nil
 	sessionNotice = nil
@@ -515,7 +526,7 @@ end
 
 function PrototypeMatchServer.start()
 	print("[FastGuesser] bootstrap started")
-	LobbyWorldService.createLobby(onLobbyEntered)
+	LobbyWorldService.createLobby(onPlayMatchPromptRequested)
 
 	Players.PlayerAdded:Connect(detectPlayer)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)

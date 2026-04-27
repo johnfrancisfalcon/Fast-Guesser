@@ -47,12 +47,26 @@ local COLORS = {
 	disabledButton = Color3.fromRGB(78, 86, 96),
 	enabledInput = Color3.fromRGB(248, 250, 252),
 	disabledInput = Color3.fromRGB(198, 204, 212),
+	disabledInputText = Color3.fromRGB(116, 126, 140),
 	enabledText = Color3.fromRGB(255, 255, 255),
 	disabledText = Color3.fromRGB(182, 190, 200),
 	errorText = Color3.fromRGB(255, 176, 176),
 	successText = Color3.fromRGB(83, 190, 132),
-	historyEntry = Color3.fromRGB(36, 44, 54),
+	historyEntry = Color3.fromRGB(33, 45, 59),
+	historyEntryAlt = Color3.fromRGB(24, 34, 46),
 	historyEntryBorder = Color3.fromRGB(72, 86, 104),
+	localCard = Color3.fromRGB(36, 59, 79),
+	localCardBorder = Color3.fromRGB(85, 162, 255),
+	opponentCard = Color3.fromRGB(30, 49, 44),
+	opponentCardBorder = Color3.fromRGB(84, 207, 144),
+	waitingCard = Color3.fromRGB(24, 34, 48),
+	waitingCardBorder = Color3.fromRGB(58, 77, 101),
+	readyPill = Color3.fromRGB(39, 66, 56),
+	readyPillBorder = Color3.fromRGB(84, 207, 144),
+	idlePill = Color3.fromRGB(45, 55, 68),
+	idlePillBorder = Color3.fromRGB(85, 108, 136),
+	activePanel = Color3.fromRGB(85, 162, 255),
+	idlePanel = Color3.fromRGB(58, 77, 101),
 }
 
 local devGui = GuiBuilder.getOrCreate(playerGui)
@@ -74,17 +88,23 @@ local howToPlayPanel = findUi(menuScreen, "HowToPlayPanel")
 local closeHowToPlayButton = findUi(menuScreen, "CloseHowToPlayButton")
 
 local lobbyStatusLabel = findUi(lobbyScreen, "LobbyStatusLabel")
+local playerOneRow = findUi(lobbyScreen, "PlayerOneRow")
+local playerTwoRow = findUi(lobbyScreen, "PlayerTwoRow")
 local playerOneSlotLabel = findUi(lobbyScreen, "PlayerOneSlotLabel")
 local playerOneReadyLabel = findUi(lobbyScreen, "PlayerOneReadyLabel")
+local playerOneReadyPill = findUi(lobbyScreen, "PlayerOneRowReadyPill")
 local playerTwoSlotLabel = findUi(lobbyScreen, "PlayerTwoSlotLabel")
 local playerTwoReadyLabel = findUi(lobbyScreen, "PlayerTwoReadyLabel")
+local playerTwoReadyPill = findUi(lobbyScreen, "PlayerTwoRowReadyPill")
 local readyButton = findUi(lobbyScreen, "ReadyButton")
 local lobbyBackButton = findUi(lobbyScreen, "LobbyBackButton")
 
 local statusLabel = findUi(matchScreen, "StatusLabel")
+local secretPanel = findUi(matchScreen, "SecretPanel")
 local secretTextBox = findUi(matchScreen, "SecretTextBox")
 local submitSecretButton = findUi(matchScreen, "SubmitSecretButton")
 local secretValidationLabel = findUi(matchScreen, "SecretValidationLabel")
+local guessPanel = findUi(matchScreen, "GuessPanel")
 local guessTextBox = findUi(matchScreen, "GuessTextBox")
 local submitGuessButton = findUi(matchScreen, "SubmitGuessButton")
 local guessValidationLabel = findUi(matchScreen, "GuessValidationLabel")
@@ -153,30 +173,201 @@ local function formatLockedPositions(lockedPositions)
 	return table.concat(values, " ")
 end
 
+local function getStroke(instance)
+	return instance:FindFirstChildOfClass("UIStroke")
+end
+
+local function getGradient(instance)
+	return instance:FindFirstChildOfClass("UIGradient")
+end
+
+local function getColorAttribute(instance, attributeName, fallback)
+	local value = instance:GetAttribute(attributeName)
+	return if typeof(value) == "Color3" then value else fallback
+end
+
+local function applyButtonVisual(button, visualState)
+	local enabledBackground = getColorAttribute(button, "EnabledBackgroundColor", COLORS.enabledButton)
+	local hoverBackground = getColorAttribute(button, "HoverBackgroundColor", enabledBackground)
+	local pressedBackground = getColorAttribute(button, "PressedBackgroundColor", enabledBackground)
+	local disabledBackground = getColorAttribute(button, "DisabledBackgroundColor", COLORS.disabledButton)
+	local enabledText = getColorAttribute(button, "EnabledTextColor", COLORS.enabledText)
+	local disabledText = getColorAttribute(button, "DisabledTextColor", COLORS.disabledText)
+	local strokeColor = getColorAttribute(button, "StrokeColor", enabledBackground)
+
+	local backgroundColor = enabledBackground
+	local textColor = enabledText
+	local transparency = 0
+	local strokeTransparency = 0.12
+
+	if visualState == "hover" then
+		backgroundColor = hoverBackground
+	elseif visualState == "pressed" then
+		backgroundColor = pressedBackground
+		transparency = 0.02
+	elseif visualState == "disabled" then
+		backgroundColor = disabledBackground
+		textColor = disabledText
+		transparency = 0.16
+		strokeTransparency = 0.4
+	end
+
+	button.BackgroundColor3 = backgroundColor
+	button.TextColor3 = textColor
+	button.BackgroundTransparency = transparency
+	button.TextTransparency = if visualState == "disabled" then 0.08 else 0
+
+	local stroke = getStroke(button)
+	if stroke then
+		stroke.Color = strokeColor
+		stroke.Transparency = strokeTransparency
+	end
+
+	local gradient = getGradient(button)
+	if gradient then
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, backgroundColor),
+			ColorSequenceKeypoint.new(1, if visualState == "disabled" then backgroundColor else pressedBackground),
+		})
+	end
+end
+
+local function wireButtonInteractions(button)
+	if not button:IsA("TextButton") then
+		return
+	end
+
+	button:SetAttribute("IsHovered", false)
+	button:SetAttribute("IsPressed", false)
+	button.MouseEnter:Connect(function()
+		button:SetAttribute("IsHovered", true)
+		if button.Active then
+			applyButtonVisual(button, "hover")
+		end
+	end)
+	button.MouseLeave:Connect(function()
+		button:SetAttribute("IsHovered", false)
+		button:SetAttribute("IsPressed", false)
+		applyButtonVisual(button, if button.Active then "default" else "disabled")
+	end)
+	button.InputBegan:Connect(function(inputObject)
+		if not button.Active then
+			return
+		end
+
+		if inputObject.UserInputType == Enum.UserInputType.MouseButton1 or inputObject.UserInputType == Enum.UserInputType.Touch then
+			button:SetAttribute("IsPressed", true)
+			applyButtonVisual(button, "pressed")
+		end
+	end)
+	button.InputEnded:Connect(function(inputObject)
+		if inputObject.UserInputType ~= Enum.UserInputType.MouseButton1 and inputObject.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+
+		button:SetAttribute("IsPressed", false)
+		if button.Active and button:GetAttribute("IsHovered") then
+			applyButtonVisual(button, "hover")
+		else
+			applyButtonVisual(button, if button.Active then "default" else "disabled")
+		end
+	end)
+
+	applyButtonVisual(button, "default")
+end
+
+local function updateCardVisual(card, backgroundColor, strokeColor)
+	card.BackgroundColor3 = backgroundColor
+
+	local stroke = getStroke(card)
+	if stroke then
+		stroke.Color = strokeColor
+		stroke.Transparency = 0.1
+	end
+
+	local gradient = getGradient(card)
+	if gradient then
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, backgroundColor),
+			ColorSequenceKeypoint.new(1, COLORS.historyEntryAlt),
+		})
+	end
+end
+
+local function updateReadyPill(pill, ready)
+	local stroke = getStroke(pill)
+	local gradient = getGradient(pill)
+
+	pill.BackgroundColor3 = if ready then COLORS.readyPill else COLORS.idlePill
+	if stroke then
+		stroke.Color = if ready then COLORS.readyPillBorder else COLORS.idlePillBorder
+		stroke.Transparency = 0.08
+	end
+	if gradient then
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, pill.BackgroundColor3),
+			ColorSequenceKeypoint.new(1, COLORS.historyEntryAlt),
+		})
+	end
+end
+
+local function setPanelAccent(panel, enabled)
+	local stroke = getStroke(panel)
+	if stroke then
+		stroke.Color = if enabled then COLORS.activePanel else COLORS.idlePanel
+		stroke.Transparency = if enabled then 0.05 else 0.22
+	end
+end
+
 local function setButtonEnabled(button, enabled)
 	button.Active = enabled
-	button.AutoButtonColor = enabled
-	button.BackgroundColor3 = if enabled then COLORS.enabledButton else COLORS.disabledButton
-	button.TextColor3 = if enabled then COLORS.enabledText else COLORS.disabledText
-	button.BackgroundTransparency = if enabled then 0 else 0.18
-	button.TextTransparency = if enabled then 0 else 0.12
+	button.AutoButtonColor = false
+	applyButtonVisual(button, if enabled then "default" else "disabled")
 end
 
 local function setSecretControlsEnabled(enabled)
 	secretControlsEnabled = enabled
 	secretTextBox.TextEditable = enabled
-	secretTextBox.BackgroundColor3 = if enabled then COLORS.enabledInput else COLORS.disabledInput
-	secretTextBox.BorderColor3 = if enabled then COLORS.enabledButton else COLORS.disabledButton
-	secretTextBox.TextTransparency = if enabled then 0 else 0.28
+	secretTextBox.BackgroundColor3 = getColorAttribute(
+		secretTextBox,
+		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
+		if enabled then COLORS.enabledInput else COLORS.disabledInput
+	)
+	secretTextBox.TextColor3 = if enabled then Color3.fromRGB(18, 25, 36) else COLORS.disabledInputText
+	secretTextBox.TextTransparency = if enabled then 0 else 0.15
+	local stroke = getStroke(secretTextBox)
+	if stroke then
+		stroke.Color = getColorAttribute(
+			secretTextBox,
+			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
+			if enabled then COLORS.enabledButton else COLORS.disabledButton
+		)
+		stroke.Transparency = if enabled then 0.2 else 0.4
+	end
+	setPanelAccent(secretPanel, enabled)
 	setButtonEnabled(submitSecretButton, enabled)
 end
 
 local function setGuessControlsEnabled(enabled)
 	guessControlsEnabled = enabled
 	guessTextBox.TextEditable = enabled
-	guessTextBox.BackgroundColor3 = if enabled then COLORS.enabledInput else COLORS.disabledInput
-	guessTextBox.BorderColor3 = if enabled then COLORS.enabledButton else COLORS.disabledButton
-	guessTextBox.TextTransparency = if enabled then 0 else 0.28
+	guessTextBox.BackgroundColor3 = getColorAttribute(
+		guessTextBox,
+		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
+		if enabled then COLORS.enabledInput else COLORS.disabledInput
+	)
+	guessTextBox.TextColor3 = if enabled then Color3.fromRGB(18, 25, 36) else COLORS.disabledInputText
+	guessTextBox.TextTransparency = if enabled then 0 else 0.15
+	local stroke = getStroke(guessTextBox)
+	if stroke then
+		stroke.Color = getColorAttribute(
+			guessTextBox,
+			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
+			if enabled then COLORS.enabledButton else COLORS.disabledButton
+		)
+		stroke.Transparency = if enabled then 0.2 else 0.4
+	end
+	setPanelAccent(guessPanel, enabled)
 	setButtonEnabled(submitGuessButton, enabled)
 end
 
@@ -254,7 +445,7 @@ end
 
 local function clearGuessHistory()
 	for _, child in ipairs(guessHistoryFrame:GetChildren()) do
-		if child:IsA("TextLabel") then
+		if child.Name == "GuessHistoryEntry" then
 			child:Destroy()
 		end
 	end
@@ -266,31 +457,49 @@ end
 local function addGuessHistoryEntry(result)
 	guessHistoryCount += 1
 
-	local entry = Instance.new("TextLabel")
+	local entry = Instance.new("Frame")
 	entry.Name = "GuessHistoryEntry"
 	entry.LayoutOrder = guessHistoryCount
-	entry.Size = UDim2.new(1, -12, 0, 62)
+	entry.Size = UDim2.new(1, -4, 0, 82)
 	entry.BackgroundColor3 = COLORS.historyEntry
-	entry.BorderColor3 = COLORS.historyEntryBorder
-	entry.BorderSizePixel = 1
-	entry.Font = Enum.Font.Gotham
-	entry.TextColor3 = Color3.fromRGB(255, 255, 255)
-	entry.TextSize = 15
-	entry.TextWrapped = true
-	entry.TextXAlignment = Enum.TextXAlignment.Left
-	entry.TextYAlignment = Enum.TextYAlignment.Center
-	entry.Text = tostring(guessHistoryCount) .. ". Guess: " .. tostring(result.guess)
-		.. "\nFeedback: " .. formatLockedPositions(result.matches)
+	entry.BorderSizePixel = 0
 	entry.Parent = guessHistoryFrame
 
+	updateCardVisual(entry, COLORS.historyEntry, COLORS.historyEntryBorder)
+
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 4)
+	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = entry
 
 	local padding = Instance.new("UIPadding")
-	padding.PaddingLeft = UDim.new(0, 10)
-	padding.PaddingRight = UDim.new(0, 10)
+	padding.PaddingLeft = UDim.new(0, 14)
+	padding.PaddingTop = UDim.new(0, 12)
+	padding.PaddingRight = UDim.new(0, 14)
+	padding.PaddingBottom = UDim.new(0, 12)
 	padding.Parent = entry
+
+	local guessLabel = Instance.new("TextLabel")
+	guessLabel.Name = "GuessLabel"
+	guessLabel.Size = UDim2.new(1, 0, 0, 24)
+	guessLabel.BackgroundTransparency = 1
+	guessLabel.Font = Enum.Font.GothamBold
+	guessLabel.Text = "Guess " .. tostring(guessHistoryCount) .. "  •  " .. tostring(result.guess)
+	guessLabel.TextColor3 = COLORS.enabledText
+	guessLabel.TextSize = 16
+	guessLabel.TextXAlignment = Enum.TextXAlignment.Left
+	guessLabel.Parent = entry
+
+	local feedbackLabel = Instance.new("TextLabel")
+	feedbackLabel.Name = "FeedbackLabel"
+	feedbackLabel.Position = UDim2.fromOffset(0, 30)
+	feedbackLabel.Size = UDim2.new(1, 0, 0, 24)
+	feedbackLabel.BackgroundTransparency = 1
+	feedbackLabel.Font = Enum.Font.Gotham
+	feedbackLabel.Text = "Locked feedback: " .. formatLockedPositions(result.matches)
+	feedbackLabel.TextColor3 = COLORS.disabledText
+	feedbackLabel.TextSize = 15
+	feedbackLabel.TextXAlignment = Enum.TextXAlignment.Left
+	feedbackLabel.Parent = entry
 end
 
 local function resetRoundUi()
@@ -336,20 +545,37 @@ end
 
 local function formatPlayerSlot(slotNumber, playerId)
 	if not playerId then
-		return "Player " .. tostring(slotNumber) .. ": Waiting"
+		return "Open Slot • Player " .. tostring(slotNumber)
 	end
 
 	if playerId == localPlayer.UserId then
-		return "Player " .. tostring(slotNumber) .. ": You"
+		return "You • Player " .. tostring(slotNumber)
 	end
 
-	return "Player " .. tostring(slotNumber) .. ": Opponent"
+	return "Opponent • Player " .. tostring(slotNumber)
 end
 
 local function updateReadyLabel(label, ready)
 	label.Text = if ready then "Ready" else "Not ready"
 	label.TextColor3 = if ready then COLORS.successText else COLORS.disabledText
 	label.Font = if ready then Enum.Font.GothamBold else Enum.Font.Gotham
+end
+
+local function updateLobbyPlayerCard(card, readyPill, slotLabel, readyLabel, slotNumber, playerId, ready)
+	slotLabel.Text = formatPlayerSlot(slotNumber, playerId)
+	updateReadyLabel(readyLabel, ready)
+	updateReadyPill(readyPill, ready)
+
+	if not playerId then
+		updateCardVisual(card, COLORS.waitingCard, COLORS.waitingCardBorder)
+		return
+	end
+
+	if playerId == localPlayer.UserId then
+		updateCardVisual(card, COLORS.localCard, COLORS.localCardBorder)
+	else
+		updateCardVisual(card, COLORS.opponentCard, COLORS.opponentCardBorder)
+	end
 end
 
 local function isLocalPlayerInLobby(lobbyState)
@@ -369,12 +595,11 @@ end
 local function updateLobby(lobbyState)
 	if not lobbyState then
 		lobbyStatusLabel.Text = "Waiting for opponent"
-		playerOneSlotLabel.Text = "Player 1: Waiting"
-		playerTwoSlotLabel.Text = "Player 2: Waiting"
-		updateReadyLabel(playerOneReadyLabel, false)
-		updateReadyLabel(playerTwoReadyLabel, false)
+		updateLobbyPlayerCard(playerOneRow, playerOneReadyPill, playerOneSlotLabel, playerOneReadyLabel, 1, nil, false)
+		updateLobbyPlayerCard(playerTwoRow, playerTwoReadyPill, playerTwoSlotLabel, playerTwoReadyLabel, 2, nil, false)
 		readyControlsEnabled = true
 		setButtonEnabled(readyButton, true)
+		readyButton.Text = "Ready"
 		return
 	end
 
@@ -385,10 +610,24 @@ local function updateLobby(lobbyState)
 	local hasBothPlayers = lobbyState.playerOneId ~= nil and lobbyState.playerTwoId ~= nil
 	local canToggleReady = lobbyState.gameState == GAME_STATES.WaitingForPlayers and isInLobby
 
-	playerOneSlotLabel.Text = formatPlayerSlot(1, lobbyState.playerOneId)
-	playerTwoSlotLabel.Text = formatPlayerSlot(2, lobbyState.playerTwoId)
-	updateReadyLabel(playerOneReadyLabel, playerOneReady)
-	updateReadyLabel(playerTwoReadyLabel, playerTwoReady)
+	updateLobbyPlayerCard(
+		playerOneRow,
+		playerOneReadyPill,
+		playerOneSlotLabel,
+		playerOneReadyLabel,
+		1,
+		lobbyState.playerOneId,
+		playerOneReady
+	)
+	updateLobbyPlayerCard(
+		playerTwoRow,
+		playerTwoReadyPill,
+		playerTwoSlotLabel,
+		playerTwoReadyLabel,
+		2,
+		lobbyState.playerTwoId,
+		playerTwoReady
+	)
 
 	local sessionNotice = getSessionNotice(lobbyState)
 	if sessionNotice then
@@ -654,7 +893,9 @@ end
 local function onLobbyFlowStateChanged(flowState)
 	latestLobbyFlowState = flowState.lobbyState or LOBBY_STATES.InLobby
 
-	if latestLobbyFlowState == LOBBY_STATES.InLobby then
+	if flowState.showMenu == true then
+		setUiState(UI_STATES.Menu)
+	elseif latestLobbyFlowState == LOBBY_STATES.InLobby then
 		setUiState(UI_STATES.LobbyWorld)
 	elseif latestLobbyFlowState == LOBBY_STATES.Matchmaking then
 		setUiState(UI_STATES.ReadyUp)
@@ -730,6 +971,12 @@ end
 guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, guessHistoryList.AbsoluteContentSize.Y + 12)
 end)
+
+for _, descendant in ipairs(devGui:GetDescendants()) do
+	if descendant:IsA("TextButton") then
+		wireButtonInteractions(descendant)
+	end
+end
 
 setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
