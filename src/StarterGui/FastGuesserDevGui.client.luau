@@ -67,6 +67,13 @@ local COLORS = {
 	idlePillBorder = Color3.fromRGB(85, 108, 136),
 	activePanel = Color3.fromRGB(85, 162, 255),
 	idlePanel = Color3.fromRGB(58, 77, 101),
+	activeSecretPanel = Color3.fromRGB(95, 151, 232),
+	activeGuessPanel = Color3.fromRGB(84, 207, 144),
+	phaseSecret = Color3.fromRGB(52, 79, 118),
+	phaseGuess = Color3.fromRGB(40, 85, 72),
+	resultWin = Color3.fromRGB(34, 87, 67),
+	resultLoss = Color3.fromRGB(67, 50, 54),
+	resultTie = Color3.fromRGB(89, 73, 41),
 }
 
 local devGui = GuiBuilder.getOrCreate(playerGui)
@@ -111,12 +118,30 @@ local guessValidationLabel = findUi(matchScreen, "GuessValidationLabel")
 local playerLockedLabel = findUi(matchScreen, "PlayerLockedLabel")
 local opponentLockedLabel = findUi(matchScreen, "OpponentLockedLabel")
 local turnLabel = findUi(matchScreen, "TurnLabel")
+local statusChip = findUi(matchScreen, "StatusInfoChip")
+local statusChipLabel = findUi(matchScreen, "StatusChipLabel")
 local gameOverLabel = findUi(matchScreen, "GameOverLabel")
 local restartButton = findUi(matchScreen, "RestartButton")
 local guessHistoryFrame = findUi(matchScreen, "GuessHistoryFrame")
 local guessHistoryList = guessHistoryFrame:WaitForChild("GuessHistoryList")
+local secretStateLabel = findUi(matchScreen, "SecretStateLabel")
+local guessStateLabel = findUi(matchScreen, "GuessStateLabel")
+local playerLockedSlots = {
+	findUi(matchScreen, "PlayerLockedSlot1"),
+	findUi(matchScreen, "PlayerLockedSlot2"),
+	findUi(matchScreen, "PlayerLockedSlot3"),
+	findUi(matchScreen, "PlayerLockedSlot4"),
+}
+local opponentLockedSlots = {
+	findUi(matchScreen, "OpponentLockedSlot1"),
+	findUi(matchScreen, "OpponentLockedSlot2"),
+	findUi(matchScreen, "OpponentLockedSlot3"),
+	findUi(matchScreen, "OpponentLockedSlot4"),
+}
 
 local resultWinnerLabel = findUi(resultScreen, "ResultWinnerLabel")
+local resultSubtitleLabel = findUi(resultScreen, "ResultSubtitleLabel")
+local resultWinnerCard = findUi(resultScreen, "ResultWinnerCard")
 local resultStatusLabel = findUi(resultScreen, "ResultStatusLabel")
 local resultPlayAgainButton = findUi(resultScreen, "ResultPlayAgainButton")
 local backToMenuButton = findUi(resultScreen, "BackToMenuButton")
@@ -175,6 +200,13 @@ end
 
 local function getStroke(instance)
 	return instance:FindFirstChildOfClass("UIStroke")
+end
+
+local function addCorner(instance, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 12)
+	corner.Parent = instance
+	return corner
 end
 
 local function getGradient(instance)
@@ -311,11 +343,42 @@ local function updateReadyPill(pill, ready)
 	end
 end
 
-local function setPanelAccent(panel, enabled)
+local function setPanelAccent(panel, enabled, activeColor)
 	local stroke = getStroke(panel)
 	if stroke then
-		stroke.Color = if enabled then COLORS.activePanel else COLORS.idlePanel
+		stroke.Color = if enabled then (activeColor or COLORS.activePanel) else COLORS.idlePanel
 		stroke.Transparency = if enabled then 0.05 else 0.22
+	end
+	panel.BackgroundTransparency = if enabled then 0 else 0.08
+end
+
+local function setStatusChip(text, backgroundColor, strokeColor)
+	statusChipLabel.Text = text
+	updateCardVisual(statusChip, backgroundColor, strokeColor)
+end
+
+local function setStateLabel(label, text, isActive)
+	label.Text = text
+	label.TextColor3 = if isActive then COLORS.enabledText else COLORS.disabledText
+	label.TextTransparency = if isActive then 0 else 0.15
+end
+
+local function setDigitSlotValues(slots, values, filledColor, emptyColor)
+	for index, slot in ipairs(slots) do
+		local digit = values[index]
+		slot.BackgroundColor3 = if digit then filledColor else emptyColor
+
+		local stroke = getStroke(slot)
+		if stroke then
+			stroke.Color = if digit then filledColor else COLORS.historyEntryBorder
+			stroke.Transparency = if digit then 0.08 else 0.3
+		end
+
+		local label = slot:FindFirstChild("DigitLabel")
+		if label and label:IsA("TextLabel") then
+			label.Text = tostring(digit or "_")
+			label.TextTransparency = if digit then 0 else 0.28
+		end
 	end
 end
 
@@ -344,7 +407,7 @@ local function setSecretControlsEnabled(enabled)
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(secretPanel, enabled)
+	setPanelAccent(secretPanel, enabled, COLORS.activeSecretPanel)
 	setButtonEnabled(submitSecretButton, enabled)
 end
 
@@ -367,7 +430,7 @@ local function setGuessControlsEnabled(enabled)
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(guessPanel, enabled)
+	setPanelAccent(guessPanel, enabled, COLORS.activeGuessPanel)
 	setButtonEnabled(submitGuessButton, enabled)
 end
 
@@ -460,16 +523,13 @@ local function addGuessHistoryEntry(result)
 	local entry = Instance.new("Frame")
 	entry.Name = "GuessHistoryEntry"
 	entry.LayoutOrder = guessHistoryCount
-	entry.Size = UDim2.new(1, -4, 0, 82)
+	entry.Size = UDim2.new(1, -4, 0, 94)
 	entry.BackgroundColor3 = COLORS.historyEntry
 	entry.BorderSizePixel = 0
 	entry.Parent = guessHistoryFrame
 
 	updateCardVisual(entry, COLORS.historyEntry, COLORS.historyEntryBorder)
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = entry
+	addCorner(entry, 12)
 
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 14)
@@ -478,24 +538,36 @@ local function addGuessHistoryEntry(result)
 	padding.PaddingBottom = UDim.new(0, 12)
 	padding.Parent = entry
 
+	local countLabel = Instance.new("TextLabel")
+	countLabel.Name = "CountLabel"
+	countLabel.Size = UDim2.fromOffset(78, 22)
+	countLabel.BackgroundTransparency = 1
+	countLabel.Font = Enum.Font.GothamBold
+	countLabel.Text = "GUESS " .. tostring(guessHistoryCount)
+	countLabel.TextColor3 = COLORS.disabledText
+	countLabel.TextSize = 12
+	countLabel.TextXAlignment = Enum.TextXAlignment.Left
+	countLabel.Parent = entry
+
 	local guessLabel = Instance.new("TextLabel")
 	guessLabel.Name = "GuessLabel"
-	guessLabel.Size = UDim2.new(1, 0, 0, 24)
+	guessLabel.Position = UDim2.fromOffset(0, 24)
+	guessLabel.Size = UDim2.new(1, 0, 0, 28)
 	guessLabel.BackgroundTransparency = 1
-	guessLabel.Font = Enum.Font.GothamBold
-	guessLabel.Text = "Guess " .. tostring(guessHistoryCount) .. "  •  " .. tostring(result.guess)
+	guessLabel.Font = Enum.Font.GothamBlack
+	guessLabel.Text = tostring(result.guess)
 	guessLabel.TextColor3 = COLORS.enabledText
-	guessLabel.TextSize = 16
+	guessLabel.TextSize = 24
 	guessLabel.TextXAlignment = Enum.TextXAlignment.Left
 	guessLabel.Parent = entry
 
 	local feedbackLabel = Instance.new("TextLabel")
 	feedbackLabel.Name = "FeedbackLabel"
-	feedbackLabel.Position = UDim2.fromOffset(0, 30)
-	feedbackLabel.Size = UDim2.new(1, 0, 0, 24)
+	feedbackLabel.Position = UDim2.fromOffset(0, 58)
+	feedbackLabel.Size = UDim2.new(1, 0, 0, 22)
 	feedbackLabel.BackgroundTransparency = 1
-	feedbackLabel.Font = Enum.Font.Gotham
-	feedbackLabel.Text = "Locked feedback: " .. formatLockedPositions(result.matches)
+	feedbackLabel.Font = Enum.Font.GothamBold
+	feedbackLabel.Text = "Locked: " .. formatLockedPositions(result.matches)
 	feedbackLabel.TextColor3 = COLORS.disabledText
 	feedbackLabel.TextSize = 15
 	feedbackLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -509,9 +581,14 @@ local function resetRoundUi()
 	guessTextBox.Text = ""
 	gameOverLabel.Text = ""
 	clearValidationMessages()
-	playerLockedLabel.Text = "Your locked: _ _ _ _"
-	opponentLockedLabel.Text = "Opponent locked: _ _ _ _"
+	playerLockedLabel.Text = "Your code"
+	opponentLockedLabel.Text = "Their code"
 	turnLabel.Text = "Turn: waiting"
+	setStatusChip("Waiting", COLORS.historyEntry, COLORS.historyEntryBorder)
+	setStateLabel(secretStateLabel, "Waiting for round", false)
+	setStateLabel(guessStateLabel, "Waiting for turn", false)
+	setDigitSlotValues(playerLockedSlots, {}, Color3.fromRGB(52, 88, 72), Color3.fromRGB(31, 48, 42))
+	setDigitSlotValues(opponentLockedSlots, {}, Color3.fromRGB(49, 84, 126), Color3.fromRGB(33, 44, 58))
 	clearGuessHistory()
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
@@ -523,10 +600,20 @@ local function updateLockedLabels(roundState)
 	local opponentId = getOpponentId(roundState)
 	local lockedPositionsByPlayerId = roundState.lockedPositionsByPlayerId or {}
 
-	playerLockedLabel.Text = "Your locked: "
-		.. formatLockedPositions(lockedPositionsByPlayerId[tostring(localPlayerId)] or {})
-	opponentLockedLabel.Text = "Opponent locked: "
-		.. formatLockedPositions(lockedPositionsByPlayerId[tostring(opponentId)] or {})
+	playerLockedLabel.Text = "Your code"
+	opponentLockedLabel.Text = "Their code"
+	setDigitSlotValues(
+		playerLockedSlots,
+		lockedPositionsByPlayerId[tostring(localPlayerId)] or {},
+		Color3.fromRGB(52, 88, 72),
+		Color3.fromRGB(31, 48, 42)
+	)
+	setDigitSlotValues(
+		opponentLockedSlots,
+		lockedPositionsByPlayerId[tostring(opponentId)] or {},
+		Color3.fromRGB(49, 84, 126),
+		Color3.fromRGB(33, 44, 58)
+	)
 end
 
 local function setScreen(screenState)
@@ -648,7 +735,9 @@ end
 local function updateResult(roundState)
 	if not roundState then
 		resultWinnerLabel.Text = "Winner: -"
+		resultSubtitleLabel.Text = "Round complete."
 		resultStatusLabel.Text = ""
+		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 		setRestartControlsEnabled(false)
 		return
 	end
@@ -656,12 +745,20 @@ local function updateResult(roundState)
 	local winnerId = roundState.winner
 	if roundState.isTie or winnerId == TIE_WINNER then
 		resultWinnerLabel.Text = "Result: Tie"
+		resultSubtitleLabel.Text = "Both players solved it on the final exchange."
+		updateCardVisual(resultWinnerCard, COLORS.resultTie, COLORS.historyEntryBorder)
 	elseif winnerId == localPlayer.UserId then
 		resultWinnerLabel.Text = "Winner: You"
+		resultSubtitleLabel.Text = "You cracked the code and closed the round."
+		updateCardVisual(resultWinnerCard, COLORS.resultWin, COLORS.readyPillBorder)
 	elseif winnerId then
 		resultWinnerLabel.Text = "Winner: Opponent"
+		resultSubtitleLabel.Text = "Opponent solved your code first."
+		updateCardVisual(resultWinnerCard, COLORS.resultLoss, Color3.fromRGB(208, 122, 122))
 	else
 		resultWinnerLabel.Text = "Winner: -"
+		resultSubtitleLabel.Text = "Round complete."
+		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 	end
 
 	local localReadyForRematch = getRematchReady(roundState, localPlayer.UserId)
@@ -734,21 +831,33 @@ local function updateMatchForUiState(uiState, roundState)
 	if uiState == UI_STATES.EnteringSecret then
 		statusLabel.Text = "Enter your secret"
 		turnLabel.Text = "Turn: waiting"
+		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
+		setStateLabel(secretStateLabel, "Active: enter your code", true)
+		setStateLabel(guessStateLabel, "Locked until secrets are in", false)
 		setSecretControlsEnabled(canSubmitSecret(roundState) == true)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.WaitingForOpponentSecret then
 		statusLabel.Text = "Waiting for opponent secret"
 		turnLabel.Text = "Turn: waiting"
+		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
+		setStateLabel(secretStateLabel, "Secret saved", false)
+		setStateLabel(guessStateLabel, "Waiting for guess phase", false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.InTurn then
 		statusLabel.Text = "Your turn"
 		turnLabel.Text = "Turn: you"
+		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
+		setStateLabel(secretStateLabel, "Secret locked", false)
+		setStateLabel(guessStateLabel, "Active: submit a guess", true)
 		setSecretControlsEnabled(false)
 		refreshGuessControls()
 	elseif uiState == UI_STATES.OpponentTurn then
 		statusLabel.Text = "Opponent's turn"
 		turnLabel.Text = if roundState and roundState.currentTurn then "Turn: opponent" else "Turn: waiting"
+		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
+		setStateLabel(secretStateLabel, "Secret locked", false)
+		setStateLabel(guessStateLabel, "Opponent is guessing", false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	end

@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 8
+local UI_VERSION = 9
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -342,17 +342,17 @@ local function createMenuScreen(parent)
 		COLORS.mutedText
 	)
 
-	local playButton = createButton(heroCard, "PlayButton", "Play", UDim2.new(1, 0, 0, 54), UDim2.fromOffset(0, 214), "Primary")
-	playButton.TextSize = 20
+	local playButton = createButton(heroCard, "PlayButton", "Play Match", UDim2.new(1, 0, 0, 64), UDim2.fromOffset(0, 204), "Primary")
+	playButton.TextSize = 24
 
-	local infoCard = createCard(shell, "MenuInfoCard", UDim2.new(0.47, -26, 0, 282), UDim2.new(0.53, 10, 0, 176), COLORS.panel)
+	local infoCard = createCard(shell, "MenuInfoCard", UDim2.new(0.47, -26, 0, 250), UDim2.new(0.53, 10, 0, 192), COLORS.panelAlt)
 	addPadding(infoCard, 26, 24, 26, 24)
 	createSectionTitle(infoCard, "How To Play", 0, 0, 240)
 	createLabel(
 		infoCard,
 		"MenuInfoTextLabel",
 		"Both players submit a secret. On each turn, enter a 4-digit guess. Exact-position matches lock in and stay visible for the rest of the round.",
-		UDim2.new(1, 0, 0, 92),
+		UDim2.new(1, 0, 0, 82),
 		UDim2.fromOffset(0, 54),
 		16,
 		COLORS.mutedText
@@ -361,12 +361,13 @@ local function createMenuScreen(parent)
 		infoCard,
 		"MenuInfoFootnoteLabel",
 		"If the first player solves first, the second player still gets one final chance to tie.",
-		UDim2.new(1, 0, 0, 54),
-		UDim2.fromOffset(0, 150),
+		UDim2.new(1, 0, 0, 44),
+		UDim2.fromOffset(0, 140),
 		15,
 		COLORS.text
 	)
-	createButton(infoCard, "HowToPlayButton", "View Full Rules", UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, 204), "Secondary")
+	local rulesButton = createButton(infoCard, "HowToPlayButton", "View Rules", UDim2.new(1, 0, 0, 42), UDim2.fromOffset(0, 190), "Secondary")
+	rulesButton.TextSize = 16
 
 	local howToPlayPanel = Instance.new("Frame")
 	howToPlayPanel.Name = "HowToPlayPanel"
@@ -400,12 +401,12 @@ local function createMenuScreen(parent)
 end
 
 local function createLobbyPlayerCard(parent, name, title, position, accentColor)
-	local card = createCard(parent, name, UDim2.new(1, 0, 0, 118), position, COLORS.panelAlt)
+	local card = createCard(parent, name, UDim2.new(1, 0, 0, 126), position, COLORS.panelAlt)
 	card:SetAttribute("AccentColor", accentColor)
 
 	local accent = Instance.new("Frame")
 	accent.Name = "AccentBar"
-	accent.Size = UDim2.fromOffset(8, 74)
+	accent.Size = UDim2.fromOffset(8, 82)
 	accent.Position = UDim2.fromOffset(18, 22)
 	accent.BackgroundColor3 = accentColor
 	accent.BorderSizePixel = 0
@@ -420,7 +421,7 @@ local function createLobbyPlayerCard(parent, name, title, position, accentColor)
 	slot.Font = Enum.Font.GothamBold
 	slot.TextYAlignment = Enum.TextYAlignment.Top
 
-	local readyPill = createCard(card, name .. "ReadyPill", UDim2.fromOffset(150, 40), UDim2.new(1, -168, 0, 38), COLORS.panelRaised, 20)
+	local readyPill = createCard(card, name .. "ReadyPill", UDim2.fromOffset(156, 42), UDim2.new(1, -174, 0, 38), COLORS.panelRaised, 21)
 	local readyLabel = createLabel(
 		readyPill,
 		name == "PlayerOneRow" and "PlayerOneReadyLabel" or "PlayerTwoReadyLabel",
@@ -449,14 +450,14 @@ local function createLobbyScreen(parent)
 	)
 	createHeader(shell, "Match with a second player and confirm both sides are ready.")
 
-	local panel = createCard(shell, "LobbyPanel", UDim2.new(1, -84, 0, 418), UDim2.fromOffset(42, 176), COLORS.panelStrong)
+	local panel = createCard(shell, "LobbyPanel", UDim2.new(1, -84, 0, 468), UDim2.fromOffset(42, 176), COLORS.panelStrong)
 	addPadding(panel, 28, 24, 28, 28)
 	createSectionTitle(panel, "Ready Up", 0, 0, 160)
 	local status = createLabel(panel, "LobbyStatusLabel", "Waiting for opponent", UDim2.new(1, 0, 0, 40), UDim2.fromOffset(0, 54), 30)
 	status.Font = Enum.Font.GothamBlack
 
 	createLobbyPlayerCard(panel, "PlayerOneRow", "PLAYER ONE", UDim2.fromOffset(0, 112), COLORS.accent)
-	createLobbyPlayerCard(panel, "PlayerTwoRow", "PLAYER TWO", UDim2.fromOffset(0, 246), COLORS.success)
+	createLobbyPlayerCard(panel, "PlayerTwoRow", "PLAYER TWO", UDim2.fromOffset(0, 260), COLORS.success)
 
 	local readyButton = createButton(panel, "ReadyButton", "Ready", UDim2.new(0.5, -10, 0, 52), UDim2.new(0, 0, 1, -52), "Primary")
 	readyButton.AnchorPoint = Vector2.new(0, 1)
@@ -492,48 +493,64 @@ local function createStatusPanel(parent)
 	local gameOverLabel = createLabel(panel, "GameOverLabel", "", UDim2.fromOffset(260, 28), UDim2.new(1, -296, 0, 100), 19, COLORS.warning)
 	gameOverLabel.Font = Enum.Font.GothamBold
 
-	local chip = createCard(panel, "StatusInfoChip", UDim2.fromOffset(180, 40), UDim2.new(1, -202, 0, 24), COLORS.panelRaised, 20)
-	createLabel(chip, "StatusChipLabel", "Best of one round", UDim2.new(1, 0, 1, 0), UDim2.fromOffset(0, 0), 15, COLORS.text).TextXAlignment =
+	local chip = createCard(panel, "StatusInfoChip", UDim2.fromOffset(190, 40), UDim2.new(1, -212, 0, 24), COLORS.panelRaised, 20)
+	createLabel(chip, "StatusChipLabel", "Secret phase", UDim2.new(1, 0, 1, 0), UDim2.fromOffset(0, 0), 15, COLORS.text).TextXAlignment =
 		Enum.TextXAlignment.Center
 end
 
 local function createSecretPanel(parent)
-	local panel = createCard(parent, "SecretPanel", UDim2.new(0.5, -10, 0, 214), UDim2.fromOffset(0, 0), COLORS.panel)
+	local panel = createCard(parent, "SecretPanel", UDim2.new(0.5, -10, 0, 226), UDim2.fromOffset(0, 0), COLORS.panel)
 	createSectionTitle(panel, "Secret", 18, 18, 180)
-	createLabel(panel, "SecretHelpLabel", "Choose the 4-digit code your opponent is trying to reveal.", UDim2.new(1, -36, 0, 38), UDim2.fromOffset(18, 64), 15, COLORS.mutedText)
-	createTextBox(panel, "SecretTextBox", "Enter 4 digits", 18, 108)
-	createButton(panel, "SubmitSecretButton", "Submit Secret", UDim2.new(1, -36, 0, 44), UDim2.fromOffset(18, 162), "Primary")
-	local validation = createLabel(panel, "SecretValidationLabel", "", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 188), 15, COLORS.errorText)
+	createLabel(panel, "SecretHelpLabel", "Choose the 4-digit code your opponent is trying to reveal.", UDim2.new(1, -36, 0, 34), UDim2.fromOffset(18, 62), 15, COLORS.mutedText)
+	local state = createLabel(panel, "SecretStateLabel", "Waiting", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 98), 14, COLORS.mutedText)
+	state.Font = Enum.Font.GothamBold
+	createTextBox(panel, "SecretTextBox", "Enter 4 digits", 18, 124)
+	createButton(panel, "SubmitSecretButton", "Submit Secret", UDim2.new(1, -36, 0, 42), UDim2.fromOffset(18, 178), "Primary")
+	local validation = createLabel(panel, "SecretValidationLabel", "", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 202), 15, COLORS.errorText)
 	validation.TextYAlignment = Enum.TextYAlignment.Top
 end
 
 local function createGuessPanel(parent)
-	local panel = createCard(parent, "GuessPanel", UDim2.new(0.5, -10, 0, 214), UDim2.new(0.5, 10, 0, 0), COLORS.panelRaised)
+	local panel = createCard(parent, "GuessPanel", UDim2.new(0.5, -10, 0, 226), UDim2.new(0.5, 10, 0, 0), COLORS.panelRaised)
 	createSectionTitle(panel, "Guess", 18, 18, 180)
-	createLabel(panel, "GuessHelpLabel", "Submit guesses on your turn. Exact digits lock permanently into place.", UDim2.new(1, -36, 0, 38), UDim2.fromOffset(18, 64), 15, COLORS.mutedText)
-	createTextBox(panel, "GuessTextBox", "Enter 4 digits", 18, 108)
-	createButton(panel, "SubmitGuessButton", "Submit Guess", UDim2.new(1, -36, 0, 44), UDim2.fromOffset(18, 162), "Primary")
-	local validation = createLabel(panel, "GuessValidationLabel", "", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 188), 15, COLORS.errorText)
+	createLabel(panel, "GuessHelpLabel", "Submit guesses on your turn. Exact digits lock permanently into place.", UDim2.new(1, -36, 0, 34), UDim2.fromOffset(18, 62), 15, COLORS.mutedText)
+	local state = createLabel(panel, "GuessStateLabel", "Waiting", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 98), 14, COLORS.mutedText)
+	state.Font = Enum.Font.GothamBold
+	createTextBox(panel, "GuessTextBox", "Enter 4 digits", 18, 124)
+	createButton(panel, "SubmitGuessButton", "Submit Guess", UDim2.new(1, -36, 0, 42), UDim2.fromOffset(18, 178), "Primary")
+	local validation = createLabel(panel, "GuessValidationLabel", "", UDim2.new(1, -36, 0, 20), UDim2.fromOffset(18, 202), 15, COLORS.errorText)
 	validation.TextYAlignment = Enum.TextYAlignment.Top
 end
 
+local function createDigitSlots(parent, prefix, x, y, filledColor)
+	for index = 1, 4 do
+		local slot = createCard(parent, prefix .. "Slot" .. tostring(index), UDim2.fromOffset(38, 34), UDim2.fromOffset(x + ((index - 1) * 44), y), COLORS.panelRaised, 10)
+		addStroke(slot, filledColor, 1, 0.28)
+		local label = createLabel(slot, "DigitLabel", "_", UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 20, COLORS.text)
+		label.Font = Enum.Font.GothamBlack
+		label.TextXAlignment = Enum.TextXAlignment.Center
+	end
+end
+
 local function createLockedPanel(parent)
-	local panel = createCard(parent, "LockedPanel", UDim2.new(1, 0, 0, 152), UDim2.fromOffset(0, 0), COLORS.panel)
+	local panel = createCard(parent, "LockedPanel", UDim2.new(1, 0, 0, 160), UDim2.fromOffset(0, 0), COLORS.panel)
 	createSectionTitle(panel, "Locked Digits", 18, 18, 180)
 
-	local yourCard = createCard(panel, "YourLockedCard", UDim2.new(0.5, -12, 0, 74), UDim2.fromOffset(18, 60), COLORS.successDark, 18)
+	local yourCard = createCard(panel, "YourLockedCard", UDim2.new(0.5, -12, 0, 82), UDim2.fromOffset(18, 60), COLORS.successDark, 18)
 	addStroke(yourCard, COLORS.success, 1, 0.14)
 	createLabel(yourCard, "YourLockedEyebrow", "YOUR LOCKED", UDim2.fromOffset(160, 18), UDim2.fromOffset(16, 12), 12, Color3.fromRGB(211, 244, 224)).Font =
 		Enum.Font.GothamBold
-	local yourLabel = createLabel(yourCard, "PlayerLockedLabel", "Your locked: _ _ _ _", UDim2.new(1, -32, 0, 30), UDim2.fromOffset(16, 34), 21, COLORS.text)
-	yourLabel.Font = Enum.Font.GothamBlack
+	local yourLabel = createLabel(yourCard, "PlayerLockedLabel", "Your code", UDim2.fromOffset(130, 24), UDim2.fromOffset(16, 36), 17, COLORS.text)
+	yourLabel.Font = Enum.Font.GothamBold
+	createDigitSlots(yourCard, "PlayerLocked", 156, 34, COLORS.success)
 
-	local opponentCard = createCard(panel, "OpponentLockedCard", UDim2.new(0.5, -12, 0, 74), UDim2.new(0.5, 6, 0, 60), COLORS.panelAlt, 18)
+	local opponentCard = createCard(panel, "OpponentLockedCard", UDim2.new(0.5, -12, 0, 82), UDim2.new(0.5, 6, 0, 60), COLORS.panelAlt, 18)
 	addStroke(opponentCard, COLORS.border, 1, 0.1)
 	createLabel(opponentCard, "OpponentLockedEyebrow", "OPPONENT LOCKED", UDim2.fromOffset(190, 18), UDim2.fromOffset(16, 12), 12, COLORS.mutedText).Font =
 		Enum.Font.GothamBold
-	local opponentLabel = createLabel(opponentCard, "OpponentLockedLabel", "Opponent locked: _ _ _ _", UDim2.new(1, -32, 0, 30), UDim2.fromOffset(16, 34), 21, COLORS.text)
+	local opponentLabel = createLabel(opponentCard, "OpponentLockedLabel", "Their code", UDim2.fromOffset(130, 24), UDim2.fromOffset(16, 36), 17, COLORS.text)
 	opponentLabel.Font = Enum.Font.GothamBold
+	createDigitSlots(opponentCard, "OpponentLocked", 156, 34, COLORS.accent)
 
 	local restartButton = createButton(panel, "RestartButton", "Play Again", UDim2.fromOffset(156, 42), UDim2.new(1, -174, 0, 18), "Secondary")
 	restartButton.TextSize = 16
@@ -607,7 +624,7 @@ local function createMatchScreen(parent)
 		guessPanel.Position = UDim2.new(0.5, 10, 0, 166)
 	end
 	if lockedPanel then
-		lockedPanel.Position = UDim2.fromOffset(0, 390)
+		lockedPanel.Position = UDim2.fromOffset(0, 404)
 	end
 end
 
@@ -630,10 +647,12 @@ local function createResultScreen(parent)
 	local title = createLabel(panel, "ResultTitleLabel", "Game over", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 48), 32)
 	title.Font = Enum.Font.GothamBlack
 
-	local winnerCard = createCard(panel, "ResultWinnerCard", UDim2.new(1, 0, 0, 72), UDim2.fromOffset(0, 94), COLORS.panelRaised, 18)
+	local winnerCard = createCard(panel, "ResultWinnerCard", UDim2.new(1, 0, 0, 86), UDim2.fromOffset(0, 94), COLORS.panelRaised, 18)
 	local winner = createLabel(panel, "ResultWinnerLabel", "Winner: -", UDim2.new(1, -32, 0, 32), UDim2.fromOffset(16, 114), 28)
 	winner.Font = Enum.Font.GothamBold
-	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 184), 18, COLORS.mutedText)
+	local subtitle = createLabel(panel, "ResultSubtitleLabel", "Round complete.", UDim2.new(1, -32, 0, 22), UDim2.fromOffset(16, 148), 15, COLORS.mutedText)
+	subtitle.Font = Enum.Font.GothamBold
+	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 196), 18, COLORS.mutedText)
 	resultStatusLabel.TextYAlignment = Enum.TextYAlignment.Top
 	local playAgain = createButton(panel, "ResultPlayAgainButton", "Play Again", UDim2.new(0.5, -10, 0, 50), UDim2.new(0, 0, 1, -18), "Primary")
 	playAgain.AnchorPoint = Vector2.new(0, 1)
@@ -654,6 +673,9 @@ local function isCurrentGui(gui)
 		and matchScreen:FindFirstChild("SubmitSecretButton", true)
 		and matchScreen:FindFirstChild("SubmitGuessButton", true)
 		and matchScreen:FindFirstChild("GuessHistoryFrame", true)
+		and matchScreen:FindFirstChild("PlayerLockedSlot1", true)
+		and matchScreen:FindFirstChild("SecretStateLabel", true)
+		and gui:FindFirstChild("ResultSubtitleLabel", true)
 end
 
 function GuiBuilder.getOrCreate(playerGui)
