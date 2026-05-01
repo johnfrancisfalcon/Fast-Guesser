@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 9
+local UI_VERSION = 10
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -29,6 +29,7 @@ local COLORS = {
 	buttonDisabled = Color3.fromRGB(70, 81, 95),
 	buttonDisabledText = Color3.fromRGB(148, 159, 174),
 	errorText = Color3.fromRGB(255, 171, 171),
+	coin = Color3.fromRGB(255, 211, 105),
 }
 
 local function addCorner(instance, radius)
@@ -269,6 +270,29 @@ local function createSectionTitle(parent, text, x, y, width)
 	)
 	title.Font = Enum.Font.GothamBold
 	return title
+end
+
+local function createCurrencyHud(parent)
+	local hud = createCard(parent, "CurrencyHud", UDim2.fromOffset(196, 54), UDim2.new(1, -216, 0, 20), COLORS.panelStrong, 18)
+	hud.ZIndex = 20
+	addStroke(hud, COLORS.coin, 1, 0.18)
+	addPadding(hud, 16, 8, 16, 8)
+
+	local label = createLabel(hud, "CurrencyTitleLabel", "COINS", UDim2.fromOffset(74, 16), UDim2.fromOffset(0, 0), 12, COLORS.mutedText)
+	label.Font = Enum.Font.GothamBold
+	label.TextTransparency = 0.08
+	label.ZIndex = 21
+
+	local amount = createLabel(hud, "CurrencyAmountLabel", "0", UDim2.new(1, -66, 0, 28), UDim2.fromOffset(0, 18), 24, COLORS.coin)
+	amount.Font = Enum.Font.GothamBlack
+	amount.ZIndex = 21
+
+	local delta = createLabel(hud, "CurrencyDeltaLabel", "", UDim2.fromOffset(60, 28), UDim2.new(1, -60, 0, 18), 18, COLORS.success)
+	delta.Font = Enum.Font.GothamBlack
+	delta.TextXAlignment = Enum.TextXAlignment.Right
+	delta.ZIndex = 21
+
+	return hud
 end
 
 local function createHeader(parent, subtitle)
@@ -652,8 +676,10 @@ local function createResultScreen(parent)
 	winner.Font = Enum.Font.GothamBold
 	local subtitle = createLabel(panel, "ResultSubtitleLabel", "Round complete.", UDim2.new(1, -32, 0, 22), UDim2.fromOffset(16, 148), 15, COLORS.mutedText)
 	subtitle.Font = Enum.Font.GothamBold
-	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 196), 18, COLORS.mutedText)
+	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 196), 18, COLORS.mutedText)
 	resultStatusLabel.TextYAlignment = Enum.TextYAlignment.Top
+	local rewardLabel = createLabel(panel, "ResultRewardLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 224), 18, COLORS.coin)
+	rewardLabel.Font = Enum.Font.GothamBlack
 	local playAgain = createButton(panel, "ResultPlayAgainButton", "Play Again", UDim2.new(0.5, -10, 0, 50), UDim2.new(0, 0, 1, -18), "Primary")
 	playAgain.AnchorPoint = Vector2.new(0, 1)
 	local backButton = createButton(panel, "BackToMenuButton", "Back to Lobby", UDim2.new(0.5, -10, 0, 50), UDim2.new(1, 0, 1, -18), "Secondary")
@@ -675,6 +701,8 @@ local function isCurrentGui(gui)
 		and matchScreen:FindFirstChild("GuessHistoryFrame", true)
 		and matchScreen:FindFirstChild("PlayerLockedSlot1", true)
 		and matchScreen:FindFirstChild("SecretStateLabel", true)
+		and gui:FindFirstChild("CurrencyHud", true)
+		and gui:FindFirstChild("ResultRewardLabel", true)
 		and gui:FindFirstChild("ResultSubtitleLabel", true)
 end
 
@@ -733,6 +761,7 @@ function GuiBuilder.getOrCreate(playerGui)
 	haloBottom.Parent = background
 	addCorner(haloBottom, 140)
 
+	createCurrencyHud(screenGui)
 	createMenuScreen(screenGui)
 	createLobbyScreen(screenGui)
 	createMatchScreen(screenGui)

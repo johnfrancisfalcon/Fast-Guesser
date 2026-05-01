@@ -82,6 +82,7 @@ local menuScreen = devGui:WaitForChild("MenuScreen")
 local lobbyScreen = devGui:WaitForChild("LobbyScreen")
 local matchScreen = devGui:WaitForChild("MatchScreen")
 local resultScreen = devGui:WaitForChild("ResultScreen")
+local currencyHud = devGui:WaitForChild("CurrencyHud")
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -145,6 +146,9 @@ local resultWinnerCard = findUi(resultScreen, "ResultWinnerCard")
 local resultStatusLabel = findUi(resultScreen, "ResultStatusLabel")
 local resultPlayAgainButton = findUi(resultScreen, "ResultPlayAgainButton")
 local backToMenuButton = findUi(resultScreen, "BackToMenuButton")
+local resultRewardLabel = findUi(resultScreen, "ResultRewardLabel")
+local currencyAmountLabel = findUi(currencyHud, "CurrencyAmountLabel")
+local currencyDeltaLabel = findUi(currencyHud, "CurrencyDeltaLabel")
 
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
@@ -159,6 +163,8 @@ local canRequestRematch = false
 local currentRoundId = nil
 local lastGameState = nil
 local guessHistoryCount = 0
+local currencyBalance = 0
+local lastCurrencyDelta = 0
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
@@ -176,6 +182,22 @@ local function bindFourDigitInput(textBox)
 			textBox.Text = clampedText
 		end
 	end)
+end
+
+local function updateCurrencyHud(delta)
+	currencyAmountLabel.Text = tostring(currencyBalance)
+	lastCurrencyDelta = delta or lastCurrencyDelta or 0
+
+	if lastCurrencyDelta > 0 then
+		currencyDeltaLabel.Text = "+" .. tostring(lastCurrencyDelta)
+	else
+		currencyDeltaLabel.Text = ""
+	end
+end
+
+local function getLocalCurrencyValue(state, key)
+	local valuesByPlayerId = state and state[key] or {}
+	return valuesByPlayerId[tostring(localPlayer.UserId)]
 end
 
 local function setValidationMessage(label, message)
@@ -737,6 +759,7 @@ local function updateResult(roundState)
 		resultWinnerLabel.Text = "Winner: -"
 		resultSubtitleLabel.Text = "Round complete."
 		resultStatusLabel.Text = ""
+		resultRewardLabel.Text = ""
 		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 		setRestartControlsEnabled(false)
 		return
@@ -760,6 +783,9 @@ local function updateResult(roundState)
 		resultSubtitleLabel.Text = "Round complete."
 		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 	end
+
+	local reward = getLocalCurrencyValue(roundState, "latestRewardByPlayerId")
+	resultRewardLabel.Text = if reward and reward > 0 then "+" .. tostring(reward) .. " coins earned" else ""
 
 	local localReadyForRematch = getRematchReady(roundState, localPlayer.UserId)
 	local sessionNotice = getSessionNotice(roundState)
@@ -964,6 +990,12 @@ end
 local function onRoundStateChanged(roundState)
 	latestRoundState = roundState
 
+	local serverBalance = getLocalCurrencyValue(roundState, "currencyBalanceByPlayerId")
+	if serverBalance ~= nil then
+		currencyBalance = serverBalance
+		updateCurrencyHud()
+	end
+
 	if roundState.roundId and roundState.roundId ~= currentRoundId then
 		currentRoundId = roundState.roundId
 		resetRoundUi()
@@ -997,6 +1029,11 @@ local function onLobbyStateChanged(lobbyState)
 	end
 
 	syncUiFromServer()
+end
+
+local function onCurrencyChanged(payload)
+	currencyBalance = payload.balance or currencyBalance
+	updateCurrencyHud(payload.delta or 0)
 end
 
 local function onLobbyFlowStateChanged(flowState)
@@ -1090,6 +1127,7 @@ end
 setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
 setRestartControlsEnabled(false)
+updateCurrencyHud(0)
 bindFourDigitInput(secretTextBox)
 bindFourDigitInput(guessTextBox)
 setUiState(UI_STATES.LobbyWorld)
@@ -1139,4 +1177,5 @@ RemoteEvents.GuessResult.OnClientEvent:Connect(onGuessResult)
 RemoteEvents.GameOver.OnClientEvent:Connect(showGameOver)
 RemoteEvents.RoundStateChanged.OnClientEvent:Connect(onRoundStateChanged)
 RemoteEvents.LobbyStateChanged.OnClientEvent:Connect(onLobbyStateChanged)
+RemoteEvents.CurrencyChanged.OnClientEvent:Connect(onCurrencyChanged)
 RemoteEvents.LobbyFlowStateChanged.OnClientEvent:Connect(onLobbyFlowStateChanged)

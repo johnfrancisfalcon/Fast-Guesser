@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local LobbyWorldService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("LobbyWorldService"))
 local MatchService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("MatchService"))
+local EconomyService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("EconomyService"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
 local PrototypeMatchServer = {}
@@ -33,6 +34,7 @@ local lobbyStateByPlayerId = {}
 local menuByPlayerId = {}
 local lobbyReadyByPlayerId = {}
 local rematchReadyByPlayerId = {}
+local latestRewardByPlayerId = {}
 local sessionNotice = nil
 
 local function setGameState(nextGameState)
@@ -149,6 +151,7 @@ local function buildRoundState(match)
 	local isTie = false
 	local lockedPositionsByPlayerId = {}
 	local secretSubmittedByPlayerId = {}
+	local currencyBalanceByPlayerId = {}
 
 	if match then
 		playerOneId = match.players[1]
@@ -164,6 +167,10 @@ local function buildRoundState(match)
 		secretSubmittedByPlayerId[tostring(playerTwoId)] = match.secrets[playerTwoId] ~= nil
 	end
 
+	for _, player in ipairs(Players:GetPlayers()) do
+		currencyBalanceByPlayerId[tostring(player.UserId)] = EconomyService.getBalance(player)
+	end
+
 	return {
 		gameState = currentGameState,
 		roundId = prototypeMatchId,
@@ -177,6 +184,8 @@ local function buildRoundState(match)
 		secretSubmittedByPlayerId = secretSubmittedByPlayerId,
 		lobbyReadyByPlayerId = lobbyReadyByPlayerId,
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
+		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
+		latestRewardByPlayerId = latestRewardByPlayerId,
 		sessionNotice = sessionNotice,
 	}
 end
@@ -185,9 +194,35 @@ local function fireRoundStateChanged()
 	RemoteEvents.RoundStateChanged:FireAllClients(buildRoundState(getPrototypeMatch()))
 end
 
+local function awardRoundRewards(match)
+	if not match or match.rewardsGranted or not match.winner then
+		return
+	end
+
+	match.rewardsGranted = true
+	latestRewardByPlayerId = {}
+
+	for _, playerId in ipairs(match.players) do
+		local isTie = match.isTie == true or match.winner == TIE_WINNER
+		local isWinner = playerId == match.winner
+		local reward = EconomyService.getMatchReward(isWinner, isTie)
+		latestRewardByPlayerId[tostring(playerId)] = reward
+		EconomyService.addCurrency(
+			playerId,
+			reward,
+			if isTie then "RoundTie" elseif isWinner then "RoundWin" else "RoundLoss"
+		)
+	end
+end
+
 local function buildLobbyState()
 	local playerOneId = prototypePlayers[1] and prototypePlayers[1].UserId or nil
 	local playerTwoId = prototypePlayers[2] and prototypePlayers[2].UserId or nil
+	local currencyBalanceByPlayerId = {}
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		currencyBalanceByPlayerId[tostring(player.UserId)] = EconomyService.getBalance(player)
+	end
 
 	return {
 		gameState = currentGameState,
@@ -198,6 +233,8 @@ local function buildLobbyState()
 		lobbyStateByPlayerId = lobbyStateByPlayerId,
 		lobbyReadyByPlayerId = lobbyReadyByPlayerId,
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
+		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
+		latestRewardByPlayerId = latestRewardByPlayerId,
 		sessionNotice = sessionNotice,
 	}
 end
@@ -251,6 +288,7 @@ local function createPrototypeMatch()
 	prototypeMatchId = prototypeMatch.id
 	lobbyReadyByPlayerId = {}
 	rematchReadyByPlayerId = {}
+	latestRewardByPlayerId = {}
 	sessionNotice = nil
 	setPrototypePlayersLobbyState(LOBBY_STATES.InRound)
 	setGameState(GAME_STATES.WaitingForSecrets)
@@ -322,6 +360,7 @@ end
 local function detectPlayer(player)
 	print("[FastGuesser] player detected", player.UserId)
 	clearPlayerSessionState(player)
+	EconomyService.ensureAccount(player)
 	menuByPlayerId[getPlayerKey(player)] = true
 	setPlayerLobbyState(player, LOBBY_STATES.InLobby)
 	fireLobbyStateChanged()
@@ -467,6 +506,7 @@ local function onGuessSubmitted(player, guess)
 	end
 
 	if match.winner then
+		awardRoundRewards(match)
 		setGameState(GAME_STATES.RoundOver)
 		setPrototypePlayersLobbyState(LOBBY_STATES.PostRound)
 		RemoteEvents.GameOver:FireAllClients(match.winner)
@@ -514,14 +554,11 @@ function onRestartRequested(player)
 	menuByPlayerId = {}
 	lobbyReadyByPlayerId = {}
 	rematchReadyByPlayerId = {}
+	latestRewardByPlayerId = {}
 	sessionNotice = nil
 	secretRequestToken += 1
 	secretRequestLoopStarted = false
-	setPrototypePlayersLobbyState(LOBBY_STATES.Matchmaking)
-
-	setGameState(GAME_STATES.WaitingForPlayers)
-	fireLobbyStateChanged()
-	fireRoundStateChanged()
+	createPrototypeMatch()
 end
 
 function PrototypeMatchServer.start()

@@ -66,6 +66,9 @@ return {
 	-- Server -> client. Payload: player lobby shell state.
 	LobbyFlowStateChanged = getOrCreateRemoteEvent("LobbyFlowStateChanged"),
 
+	-- Server -> client. Payload: current soft-currency balance and optional delta.
+	CurrencyChanged = getOrCreateRemoteEvent("CurrencyChanged"),
+
 	-- Client -> server. Payload: none; opts into the post-game rematch flow.
 	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),
 
