@@ -69,6 +69,27 @@ return {
 	-- Server -> client. Payload: current soft-currency balance and optional delta.
 	CurrencyChanged = getOrCreateRemoteEvent("CurrencyChanged"),
 
+	-- Server -> client. Payload: opens the coin shop panel.
+	ShopOpened = getOrCreateRemoteEvent("ShopOpened"),
+
+	-- Server -> client. Payload: shop catalog, ownership, equipped items, and balance.
+	ShopStateChanged = getOrCreateRemoteEvent("ShopStateChanged"),
+
+	-- Client -> server. Payload: item id string.
+	ShopPurchaseRequested = getOrCreateRemoteEvent("ShopPurchaseRequested"),
+
+	-- Client -> server. Payload: item id string.
+	ShopEquipRequested = getOrCreateRemoteEvent("ShopEquipRequested"),
+
+	-- Server -> client. Payload: opens the rewards panel.
+	RewardsOpened = getOrCreateRemoteEvent("RewardsOpened"),
+
+	-- Server -> client. Payload: reward claim status and balance.
+	RewardStateChanged = getOrCreateRemoteEvent("RewardStateChanged"),
+
+	-- Client -> server. Payload: none; claims the current test reward.
+	RewardClaimRequested = getOrCreateRemoteEvent("RewardClaimRequested"),
+
 	-- Client -> server. Payload: none; opts into the post-game rematch flow.
 	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),
 

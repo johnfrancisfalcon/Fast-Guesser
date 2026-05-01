@@ -391,6 +391,14 @@ end
 
 local onRestartRequested
 
+local function onShopPromptRequested(player)
+	EconomyService.openShop(player)
+end
+
+local function onRewardsPromptRequested(player)
+	EconomyService.openRewards(player)
+end
+
 local function onPlayMatchPromptRequested(player)
 	menuByPlayerId[getPlayerKey(player)] = true
 	sessionNotice = nil
@@ -563,7 +571,7 @@ end
 
 function PrototypeMatchServer.start()
 	print("[FastGuesser] bootstrap started")
-	LobbyWorldService.createLobby(onPlayMatchPromptRequested)
+	LobbyWorldService.createLobby(onPlayMatchPromptRequested, onShopPromptRequested, onRewardsPromptRequested)
 
 	Players.PlayerAdded:Connect(detectPlayer)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
@@ -574,6 +582,15 @@ function PrototypeMatchServer.start()
 	RemoteEvents.ReadyChanged.OnServerEvent:Connect(onReadyChanged)
 	RemoteEvents.RematchRequested.OnServerEvent:Connect(onRestartRequested)
 	RemoteEvents.RestartRequested.OnServerEvent:Connect(onRestartRequested)
+	RemoteEvents.ShopPurchaseRequested.OnServerEvent:Connect(function(player, itemId)
+		EconomyService.purchaseItem(player, itemId)
+	end)
+	RemoteEvents.ShopEquipRequested.OnServerEvent:Connect(function(player, itemId)
+		EconomyService.equipItem(player, itemId)
+	end)
+	RemoteEvents.RewardClaimRequested.OnServerEvent:Connect(function(player)
+		EconomyService.claimTestReward(player)
+	end)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		detectPlayer(player)

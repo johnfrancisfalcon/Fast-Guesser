@@ -83,6 +83,8 @@ local lobbyScreen = devGui:WaitForChild("LobbyScreen")
 local matchScreen = devGui:WaitForChild("MatchScreen")
 local resultScreen = devGui:WaitForChild("ResultScreen")
 local currencyHud = devGui:WaitForChild("CurrencyHud")
+local shopPanel = devGui:WaitForChild("ShopPanel")
+local rewardsPanel = devGui:WaitForChild("RewardsPanel")
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -149,6 +151,14 @@ local backToMenuButton = findUi(resultScreen, "BackToMenuButton")
 local resultRewardLabel = findUi(resultScreen, "ResultRewardLabel")
 local currencyAmountLabel = findUi(currencyHud, "CurrencyAmountLabel")
 local currencyDeltaLabel = findUi(currencyHud, "CurrencyDeltaLabel")
+local closeShopButton = findUi(shopPanel, "CloseShopButton")
+local shopBalanceLabel = findUi(shopPanel, "ShopBalanceLabel")
+local shopStatusLabel = findUi(shopPanel, "ShopStatusLabel")
+local closeRewardsButton = findUi(rewardsPanel, "CloseRewardsButton")
+local rewardsBalanceLabel = findUi(rewardsPanel, "RewardsBalanceLabel")
+local rewardsStatusLabel = findUi(rewardsPanel, "RewardsStatusLabel")
+local rewardAmountLabel = findUi(rewardsPanel, "RewardAmountLabel")
+local claimRewardButton = findUi(rewardsPanel, "ClaimRewardButton")
 
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
@@ -165,6 +175,10 @@ local lastGameState = nil
 local guessHistoryCount = 0
 local currencyBalance = 0
 local lastCurrencyDelta = 0
+local latestShopState = nil
+local latestRewardState = nil
+local shopRows = {}
+local setButtonEnabled
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
@@ -198,6 +212,56 @@ end
 local function getLocalCurrencyValue(state, key)
 	local valuesByPlayerId = state and state[key] or {}
 	return valuesByPlayerId[tostring(localPlayer.UserId)]
+end
+
+local function setCommercePanelsVisible(shopVisible, rewardsVisible)
+	shopPanel.Visible = shopVisible == true
+	rewardsPanel.Visible = rewardsVisible == true
+end
+
+local function getEquippedItemIdByCategory(equippedItems, category)
+	return equippedItems and equippedItems[category] or nil
+end
+
+local function updateShopPanel(shopState)
+	latestShopState = shopState or latestShopState
+	local state = latestShopState
+	shopBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
+
+	shopStatusLabel.Text = (state and state.message) or "Select an item."
+
+	local catalog = state and state.catalog or {}
+	local ownedItems = state and state.ownedItems or {}
+	local equippedItems = state and state.equippedItems or {}
+
+	for index, row in ipairs(shopRows) do
+		local item = catalog[index]
+		row.frame.Visible = item ~= nil
+		if item then
+			row.frame:SetAttribute("ItemId", item.id)
+			row.name.Text = item.name
+			row.meta.Text = item.category .. " • " .. tostring(item.price) .. " coins"
+			local owned = ownedItems[item.id] == true
+			local equipped = getEquippedItemIdByCategory(equippedItems, item.category) == item.id
+			row.state.Text = if equipped then "Equipped" elseif owned then "Owned" else tostring(item.price) .. " coins"
+			setButtonEnabled(row.buyButton, not owned)
+			setButtonEnabled(row.equipButton, owned and not equipped)
+			row.buyButton.Text = if owned then "Owned" else "Buy"
+			row.equipButton.Text = if equipped then "Equipped" else "Equip"
+		end
+	end
+end
+
+local function updateRewardsPanel(rewardState)
+	latestRewardState = rewardState or latestRewardState
+	local state = latestRewardState
+	rewardsBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
+	local claimAmount = (state and state.claimAmount) or 0
+	local claimed = state and state.claimed == true
+	rewardAmountLabel.Text = "+" .. tostring(claimAmount) .. " coins"
+	claimRewardButton.Text = if claimed then "Claimed" else "Claim Reward"
+	setButtonEnabled(claimRewardButton, not claimed)
+	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Reward already claimed this session." else "Reward ready."
 end
 
 local function setValidationMessage(label, message)
@@ -404,7 +468,7 @@ local function setDigitSlotValues(slots, values, filledColor, emptyColor)
 	end
 end
 
-local function setButtonEnabled(button, enabled)
+function setButtonEnabled(button, enabled)
 	button.Active = enabled
 	button.AutoButtonColor = false
 	applyButtonVisual(button, if enabled then "default" else "disabled")
@@ -900,13 +964,16 @@ local function renderUi()
 		setRestartControlsEnabled(false)
 		updateLobby(latestLobbyState)
 	elseif currentUiState == UI_STATES.ReadyUp then
+		setCommercePanelsVisible(false, false)
 		howToPlayPanel.Visible = false
 		updateLobby(latestLobbyState)
 		resetRoundUi()
 	elseif isMatchUiState(currentUiState) then
+		setCommercePanelsVisible(false, false)
 		howToPlayPanel.Visible = false
 		updateMatchForUiState(currentUiState, latestRoundState)
 	elseif currentUiState == UI_STATES.GameOver then
+		setCommercePanelsVisible(false, false)
 		howToPlayPanel.Visible = false
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
@@ -1036,6 +1103,26 @@ local function onCurrencyChanged(payload)
 	updateCurrencyHud(payload.delta or 0)
 end
 
+local function onShopOpened(shopState)
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(true, false)
+	updateShopPanel(shopState)
+end
+
+local function onShopStateChanged(shopState)
+	updateShopPanel(shopState)
+end
+
+local function onRewardsOpened(rewardState)
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(false, true)
+	updateRewardsPanel(rewardState)
+end
+
+local function onRewardStateChanged(rewardState)
+	updateRewardsPanel(rewardState)
+end
+
 local function onLobbyFlowStateChanged(flowState)
 	latestLobbyFlowState = flowState.lobbyState or LOBBY_STATES.InLobby
 
@@ -1118,6 +1205,17 @@ guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(functio
 	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, guessHistoryList.AbsoluteContentSize.Y + 12)
 end)
 
+for index = 1, 4 do
+	shopRows[index] = {
+		frame = findUi(shopPanel, "ShopItemRow" .. tostring(index)),
+		name = findUi(shopPanel, "ShopItemNameLabel" .. tostring(index)),
+		meta = findUi(shopPanel, "ShopItemMetaLabel" .. tostring(index)),
+		state = findUi(shopPanel, "ShopItemStateLabel" .. tostring(index)),
+		buyButton = findUi(shopPanel, "ShopBuyButton" .. tostring(index)),
+		equipButton = findUi(shopPanel, "ShopEquipButton" .. tostring(index)),
+	}
+end
+
 for _, descendant in ipairs(devGui:GetDescendants()) do
 	if descendant:IsA("TextButton") then
 		wireButtonInteractions(descendant)
@@ -1133,17 +1231,50 @@ bindFourDigitInput(guessTextBox)
 setUiState(UI_STATES.LobbyWorld)
 
 playButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false)
 	howToPlayPanel.Visible = false
 	RemoteEvents.LobbyEntered:FireServer()
 	setUiState(UI_STATES.ReadyUp)
 end)
 
 howToPlayButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false)
 	howToPlayPanel.Visible = not howToPlayPanel.Visible
 end)
 
 closeHowToPlayButton.MouseButton1Click:Connect(function()
 	howToPlayPanel.Visible = false
+end)
+
+closeShopButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false)
+end)
+
+closeRewardsButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false)
+end)
+
+for _, row in ipairs(shopRows) do
+	row.buyButton.MouseButton1Click:Connect(function()
+		local itemId = row.frame:GetAttribute("ItemId")
+		if itemId then
+			shopStatusLabel.Text = "Buying..."
+			RemoteEvents.ShopPurchaseRequested:FireServer(itemId)
+		end
+	end)
+	row.equipButton.MouseButton1Click:Connect(function()
+		local itemId = row.frame:GetAttribute("ItemId")
+		if itemId then
+			shopStatusLabel.Text = "Equipping..."
+			RemoteEvents.ShopEquipRequested:FireServer(itemId)
+		end
+	end)
+end
+
+claimRewardButton.MouseButton1Click:Connect(function()
+	rewardsStatusLabel.Text = "Claiming..."
+	setButtonEnabled(claimRewardButton, false)
+	RemoteEvents.RewardClaimRequested:FireServer()
 end)
 
 lobbyBackButton.MouseButton1Click:Connect(function()
@@ -1178,4 +1309,8 @@ RemoteEvents.GameOver.OnClientEvent:Connect(showGameOver)
 RemoteEvents.RoundStateChanged.OnClientEvent:Connect(onRoundStateChanged)
 RemoteEvents.LobbyStateChanged.OnClientEvent:Connect(onLobbyStateChanged)
 RemoteEvents.CurrencyChanged.OnClientEvent:Connect(onCurrencyChanged)
+RemoteEvents.ShopOpened.OnClientEvent:Connect(onShopOpened)
+RemoteEvents.ShopStateChanged.OnClientEvent:Connect(onShopStateChanged)
+RemoteEvents.RewardsOpened.OnClientEvent:Connect(onRewardsOpened)
+RemoteEvents.RewardStateChanged.OnClientEvent:Connect(onRewardStateChanged)
 RemoteEvents.LobbyFlowStateChanged.OnClientEvent:Connect(onLobbyFlowStateChanged)

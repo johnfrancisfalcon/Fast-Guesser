@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 10
+local UI_VERSION = 13
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -87,6 +87,18 @@ local function createScreen(name)
 	screen.Visible = false
 
 	return screen
+end
+
+local function setTreeZIndex(root, zIndex)
+	if root:IsA("GuiObject") then
+		root.ZIndex = zIndex
+	end
+
+	for _, descendant in ipairs(root:GetDescendants()) do
+		if descendant:IsA("GuiObject") then
+			descendant.ZIndex = zIndex
+		end
+	end
 end
 
 local function createCenteredShell(parent, name, size, minSize, maxSize)
@@ -273,7 +285,7 @@ local function createSectionTitle(parent, text, x, y, width)
 end
 
 local function createCurrencyHud(parent)
-	local hud = createCard(parent, "CurrencyHud", UDim2.fromOffset(196, 54), UDim2.new(1, -216, 0, 20), COLORS.panelStrong, 18)
+	local hud = createCard(parent, "CurrencyHud", UDim2.fromOffset(184, 58), UDim2.fromOffset(20, 20), COLORS.panelStrong, 18)
 	hud.ZIndex = 20
 	addStroke(hud, COLORS.coin, 1, 0.18)
 	addPadding(hud, 16, 8, 16, 8)
@@ -283,11 +295,11 @@ local function createCurrencyHud(parent)
 	label.TextTransparency = 0.08
 	label.ZIndex = 21
 
-	local amount = createLabel(hud, "CurrencyAmountLabel", "0", UDim2.new(1, -66, 0, 28), UDim2.fromOffset(0, 18), 24, COLORS.coin)
+	local amount = createLabel(hud, "CurrencyAmountLabel", "0", UDim2.new(1, -72, 0, 28), UDim2.fromOffset(0, 20), 24, COLORS.coin)
 	amount.Font = Enum.Font.GothamBlack
 	amount.ZIndex = 21
 
-	local delta = createLabel(hud, "CurrencyDeltaLabel", "", UDim2.fromOffset(60, 28), UDim2.new(1, -60, 0, 18), 18, COLORS.success)
+	local delta = createLabel(hud, "CurrencyDeltaLabel", "", UDim2.fromOffset(66, 26), UDim2.new(1, -66, 0, 22), 16, COLORS.success)
 	delta.Font = Enum.Font.GothamBlack
 	delta.TextXAlignment = Enum.TextXAlignment.Right
 	delta.ZIndex = 21
@@ -686,6 +698,86 @@ local function createResultScreen(parent)
 	backButton.AnchorPoint = Vector2.new(1, 1)
 end
 
+local function createShopPanel(parent)
+	local overlay = Instance.new("Frame")
+	overlay.Name = "ShopPanel"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.34
+	overlay.BorderSizePixel = 0
+	overlay.Visible = false
+	overlay.Active = true
+	overlay.ZIndex = 30
+	overlay.Parent = parent
+
+	local shell = createCenteredShell(overlay, "ShopModal", UDim2.new(0.72, 0, 0.78, 0), Vector2.new(780, 640), Vector2.new(1000, 760))
+	shell.ZIndex = 31
+	addPadding(shell, 30, 26, 30, 30)
+	createSectionTitle(shell, "Shop", 0, 0, 160)
+	local balance = createLabel(shell, "ShopBalanceLabel", "Coins: 0", UDim2.fromOffset(220, 30), UDim2.new(1, -220, 0, 2), 20, COLORS.coin)
+	balance.Font = Enum.Font.GothamBlack
+	balance.TextXAlignment = Enum.TextXAlignment.Right
+
+	local status = createLabel(shell, "ShopStatusLabel", "Select an item.", UDim2.new(1, -210, 0, 28), UDim2.fromOffset(0, 58), 16, COLORS.mutedText)
+	status.Font = Enum.Font.GothamBold
+
+	for index = 1, 4 do
+		local y = 104 + ((index - 1) * 94)
+		local row = createCard(shell, "ShopItemRow" .. tostring(index), UDim2.new(1, 0, 0, 82), UDim2.fromOffset(0, y), COLORS.panelAlt, 16)
+		addPadding(row, 18, 12, 18, 12)
+		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -340, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
+		name.Font = Enum.Font.GothamBold
+		createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -340, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
+		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(112, 24), UDim2.new(1, -322, 0, 2), 16, COLORS.coin)
+		state.Font = Enum.Font.GothamBlack
+		state.TextXAlignment = Enum.TextXAlignment.Right
+		createButton(row, "ShopBuyButton" .. tostring(index), "Buy", UDim2.fromOffset(104, 44), UDim2.new(1, -214, 0, 7), "Primary").TextSize = 16
+		createButton(row, "ShopEquipButton" .. tostring(index), "Equip", UDim2.fromOffset(94, 44), UDim2.new(1, -94, 0, 7), "Secondary").TextSize = 16
+	end
+
+	local footer = createCard(shell, "ShopFooter", UDim2.new(1, 0, 0, 64), UDim2.new(0, 0, 1, -64), COLORS.panelAlt, 18)
+	footer.BackgroundTransparency = 0.08
+	local close = createButton(footer, "CloseShopButton", "Close", UDim2.fromOffset(156, 44), UDim2.new(1, -174, 0, 10), "Secondary")
+	setTreeZIndex(shell, 32)
+end
+
+local function createRewardsPanel(parent)
+	local overlay = Instance.new("Frame")
+	overlay.Name = "RewardsPanel"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.34
+	overlay.BorderSizePixel = 0
+	overlay.Visible = false
+	overlay.Active = true
+	overlay.ZIndex = 30
+	overlay.Parent = parent
+
+	local shell = createCenteredShell(overlay, "RewardsModal", UDim2.new(0.6, 0, 0.64, 0), Vector2.new(660, 500), Vector2.new(840, 620))
+	shell.ZIndex = 31
+	addPadding(shell, 30, 26, 30, 30)
+	createSectionTitle(shell, "Rewards", 0, 0, 180)
+	local balance = createLabel(shell, "RewardsBalanceLabel", "Coins: 0", UDim2.fromOffset(220, 30), UDim2.new(1, -220, 0, 2), 20, COLORS.coin)
+	balance.Font = Enum.Font.GothamBlack
+	balance.TextXAlignment = Enum.TextXAlignment.Right
+
+	local card = createCard(shell, "RewardClaimCard", UDim2.new(1, 0, 0, 232), UDim2.fromOffset(0, 96), COLORS.panelStrong, 18)
+	addPadding(card, 24, 22, 24, 22)
+	local title = createLabel(card, "RewardTitleLabel", "Daily Reward Placeholder", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 0), 26, COLORS.text)
+	title.Font = Enum.Font.GothamBlack
+	createLabel(card, "RewardBodyLabel", "Claim a test coin reward once per server session. This is the server-owned foundation for a future spin wheel or daily streak system.", UDim2.new(1, -240, 0, 76), UDim2.fromOffset(0, 46), 17, COLORS.mutedText)
+	local amount = createLabel(card, "RewardAmountLabel", "+25", UDim2.fromOffset(200, 58), UDim2.new(1, -210, 0, 48), 44, COLORS.coin)
+	amount.Font = Enum.Font.GothamBlack
+	amount.TextXAlignment = Enum.TextXAlignment.Right
+	createButton(card, "ClaimRewardButton", "Claim Test Reward", UDim2.fromOffset(240, 52), UDim2.fromOffset(0, 146), "Primary")
+
+	local status = createLabel(shell, "RewardsStatusLabel", "Reward ready.", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 350), 18, COLORS.mutedText)
+	status.Font = Enum.Font.GothamBold
+	local close = createButton(shell, "CloseRewardsButton", "Close", UDim2.fromOffset(156, 44), UDim2.new(1, -156, 1, -44), "Secondary")
+	close.AnchorPoint = Vector2.new(0, 1)
+	setTreeZIndex(shell, 32)
+end
+
 local function isCurrentGui(gui)
 	local matchScreen = gui:FindFirstChild("MatchScreen")
 	return gui:GetAttribute("UiVersion") == UI_VERSION
@@ -703,6 +795,8 @@ local function isCurrentGui(gui)
 		and matchScreen:FindFirstChild("SecretStateLabel", true)
 		and gui:FindFirstChild("CurrencyHud", true)
 		and gui:FindFirstChild("ResultRewardLabel", true)
+		and gui:FindFirstChild("ShopPanel", true)
+		and gui:FindFirstChild("RewardsPanel", true)
 		and gui:FindFirstChild("ResultSubtitleLabel", true)
 end
 
@@ -766,6 +860,8 @@ function GuiBuilder.getOrCreate(playerGui)
 	createLobbyScreen(screenGui)
 	createMatchScreen(screenGui)
 	createResultScreen(screenGui)
+	createShopPanel(screenGui)
+	createRewardsPanel(screenGui)
 
 	return screenGui
 end
