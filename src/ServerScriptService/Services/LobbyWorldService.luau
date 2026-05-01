@@ -176,7 +176,7 @@ local function createRewardWheel(parent, onRewardsRequested)
 	wall:SetAttribute("FutureFeature", "Rewards")
 end
 
-function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, onRewardsRequested)
+function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, onRewardsRequested, onLeaderboardRequested)
 	local existingLobby = Workspace:FindFirstChild(LOBBY_MODEL_NAME)
 	if existingLobby then
 		existingLobby:Destroy()
@@ -199,7 +199,11 @@ function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, on
 		callback = onShopRequested,
 	})
 	createRewardWheel(model, onRewardsRequested)
-	createStation(model, "LeaderboardStation", Vector3.new(-21, 0.05, -22), COLORS.success, "Leaderboard", "Wins and streaks soon")
+	createStation(model, "LeaderboardStation", Vector3.new(-21, 0.05, -22), COLORS.success, "Leaderboard", "Session wins", {
+		name = "LeaderboardPrompt",
+		actionText = "Open Leaderboard",
+		callback = onLeaderboardRequested,
+	})
 	createStation(model, "ModeStation", Vector3.new(21, 0.05, -22), COLORS.warning, "Modes", "4-digit now, 1-100 later")
 
 	createPart(model, "ShopPathLight", Vector3.new(10, 0.18, 1), Vector3.new(-21, 0.18, 13), COLORS.shop, Enum.Material.Neon)

@@ -90,6 +90,12 @@ return {
 	-- Client -> server. Payload: none; claims the current test reward.
 	RewardClaimRequested = getOrCreateRemoteEvent("RewardClaimRequested"),
 
+	-- Server -> client. Payload: opens the session leaderboard panel.
+	LeaderboardOpened = getOrCreateRemoteEvent("LeaderboardOpened"),
+
+	-- Server -> client. Payload: refreshed leaderboard entries.
+	LeaderboardStateChanged = getOrCreateRemoteEvent("LeaderboardStateChanged"),
+
 	-- Client -> server. Payload: none; opts into the post-game rematch flow.
 	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),
 

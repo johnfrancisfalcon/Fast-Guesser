@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 13
+local UI_VERSION = 14
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -778,6 +778,66 @@ local function createRewardsPanel(parent)
 	setTreeZIndex(shell, 32)
 end
 
+local function createLeaderboardPanel(parent)
+	local overlay = Instance.new("Frame")
+	overlay.Name = "LeaderboardPanel"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.34
+	overlay.BorderSizePixel = 0
+	overlay.Visible = false
+	overlay.Active = true
+	overlay.ZIndex = 30
+	overlay.Parent = parent
+
+	local shell = createCenteredShell(overlay, "LeaderboardModal", UDim2.new(0.62, 0, 0.7, 0), Vector2.new(680, 560), Vector2.new(900, 700))
+	shell.ZIndex = 31
+	addPadding(shell, 30, 26, 30, 30)
+	createSectionTitle(shell, "Leaderboard", 0, 0, 220)
+	local status = createLabel(shell, "LeaderboardStatusLabel", "Session leaderboard", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 58), 16, COLORS.mutedText)
+	status.Font = Enum.Font.GothamBold
+
+	local header = createCard(shell, "LeaderboardHeaderRow", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 96), COLORS.panelAlt, 12)
+	addPadding(header, 16, 8, 16, 8)
+	createLabel(header, "LeaderboardRankHeader", "#", UDim2.fromOffset(42, 20), UDim2.fromOffset(0, 0), 13, COLORS.mutedText).Font = Enum.Font.GothamBold
+	createLabel(header, "LeaderboardNameHeader", "PLAYER", UDim2.new(1, -320, 0, 20), UDim2.fromOffset(52, 0), 13, COLORS.mutedText).Font = Enum.Font.GothamBold
+	local winsHeader = createLabel(header, "LeaderboardWinsHeader", "WINS", UDim2.fromOffset(72, 20), UDim2.new(1, -250, 0, 0), 13, COLORS.mutedText)
+	winsHeader.Font = Enum.Font.GothamBold
+	winsHeader.TextXAlignment = Enum.TextXAlignment.Right
+	local streakHeader = createLabel(header, "LeaderboardStreakHeader", "STREAK", UDim2.fromOffset(82, 20), UDim2.new(1, -158, 0, 0), 13, COLORS.mutedText)
+	streakHeader.Font = Enum.Font.GothamBold
+	streakHeader.TextXAlignment = Enum.TextXAlignment.Right
+	local coinsHeader = createLabel(header, "LeaderboardCoinsHeader", "COINS", UDim2.fromOffset(82, 20), UDim2.new(1, -72, 0, 0), 13, COLORS.mutedText)
+	coinsHeader.Font = Enum.Font.GothamBold
+	coinsHeader.TextXAlignment = Enum.TextXAlignment.Right
+
+	for index = 1, 6 do
+		local y = 146 + ((index - 1) * 58)
+		local row = createCard(shell, "LeaderboardRow" .. tostring(index), UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, y), COLORS.panelAlt, 12)
+		addPadding(row, 16, 9, 16, 9)
+		local rank = createLabel(row, "LeaderboardRankLabel" .. tostring(index), "-", UDim2.fromOffset(42, 26), UDim2.fromOffset(0, 0), 20, COLORS.coin)
+		rank.Font = Enum.Font.GothamBlack
+		local name = createLabel(row, "LeaderboardNameLabel" .. tostring(index), "Open Slot", UDim2.new(1, -320, 0, 26), UDim2.fromOffset(52, 0), 18, COLORS.text)
+		name.Font = Enum.Font.GothamBold
+		local wins = createLabel(row, "LeaderboardWinsLabel" .. tostring(index), "0", UDim2.fromOffset(72, 26), UDim2.new(1, -250, 0, 0), 18, COLORS.text)
+		wins.Font = Enum.Font.GothamBlack
+		wins.TextXAlignment = Enum.TextXAlignment.Right
+		local streak = createLabel(row, "LeaderboardStreakLabel" .. tostring(index), "0", UDim2.fromOffset(82, 26), UDim2.new(1, -158, 0, 0), 18, COLORS.text)
+		streak.Font = Enum.Font.GothamBlack
+		streak.TextXAlignment = Enum.TextXAlignment.Right
+		local coins = createLabel(row, "LeaderboardCoinsLabel" .. tostring(index), "0", UDim2.fromOffset(82, 26), UDim2.new(1, -72, 0, 0), 18, COLORS.coin)
+		coins.Font = Enum.Font.GothamBlack
+		coins.TextXAlignment = Enum.TextXAlignment.Right
+	end
+
+	local empty = createLabel(shell, "LeaderboardEmptyLabel", "Play a round to build the leaderboard.", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 504), 17, COLORS.mutedText)
+	empty.Font = Enum.Font.GothamBold
+	empty.TextXAlignment = Enum.TextXAlignment.Center
+	local close = createButton(shell, "CloseLeaderboardButton", "Close", UDim2.fromOffset(156, 44), UDim2.new(1, -156, 1, -44), "Secondary")
+	close.AnchorPoint = Vector2.new(0, 1)
+	setTreeZIndex(shell, 32)
+end
+
 local function isCurrentGui(gui)
 	local matchScreen = gui:FindFirstChild("MatchScreen")
 	return gui:GetAttribute("UiVersion") == UI_VERSION
@@ -797,6 +857,7 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("ResultRewardLabel", true)
 		and gui:FindFirstChild("ShopPanel", true)
 		and gui:FindFirstChild("RewardsPanel", true)
+		and gui:FindFirstChild("LeaderboardPanel", true)
 		and gui:FindFirstChild("ResultSubtitleLabel", true)
 end
 
@@ -862,6 +923,7 @@ function GuiBuilder.getOrCreate(playerGui)
 	createResultScreen(screenGui)
 	createShopPanel(screenGui)
 	createRewardsPanel(screenGui)
+	createLeaderboardPanel(screenGui)
 
 	return screenGui
 end

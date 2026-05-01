@@ -85,6 +85,7 @@ local resultScreen = devGui:WaitForChild("ResultScreen")
 local currencyHud = devGui:WaitForChild("CurrencyHud")
 local shopPanel = devGui:WaitForChild("ShopPanel")
 local rewardsPanel = devGui:WaitForChild("RewardsPanel")
+local leaderboardPanel = devGui:WaitForChild("LeaderboardPanel")
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -159,6 +160,9 @@ local rewardsBalanceLabel = findUi(rewardsPanel, "RewardsBalanceLabel")
 local rewardsStatusLabel = findUi(rewardsPanel, "RewardsStatusLabel")
 local rewardAmountLabel = findUi(rewardsPanel, "RewardAmountLabel")
 local claimRewardButton = findUi(rewardsPanel, "ClaimRewardButton")
+local closeLeaderboardButton = findUi(leaderboardPanel, "CloseLeaderboardButton")
+local leaderboardStatusLabel = findUi(leaderboardPanel, "LeaderboardStatusLabel")
+local leaderboardEmptyLabel = findUi(leaderboardPanel, "LeaderboardEmptyLabel")
 
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
@@ -178,6 +182,8 @@ local lastCurrencyDelta = 0
 local latestShopState = nil
 local latestRewardState = nil
 local shopRows = {}
+local leaderboardRows = {}
+local latestLeaderboardState = nil
 local setButtonEnabled
 
 local function isFourDigits(value)
@@ -214,9 +220,10 @@ local function getLocalCurrencyValue(state, key)
 	return valuesByPlayerId[tostring(localPlayer.UserId)]
 end
 
-local function setCommercePanelsVisible(shopVisible, rewardsVisible)
+local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible)
 	shopPanel.Visible = shopVisible == true
 	rewardsPanel.Visible = rewardsVisible == true
+	leaderboardPanel.Visible = leaderboardVisible == true
 end
 
 local function getEquippedItemIdByCategory(equippedItems, category)
@@ -248,6 +255,26 @@ local function updateShopPanel(shopState)
 			setButtonEnabled(row.equipButton, owned and not equipped)
 			row.buyButton.Text = if owned then "Owned" else "Buy"
 			row.equipButton.Text = if equipped then "Equipped" else "Equip"
+		end
+	end
+end
+
+local function updateLeaderboardPanel(leaderboardState)
+	latestLeaderboardState = leaderboardState or latestLeaderboardState
+	local state = latestLeaderboardState
+	local entries = state and state.entries or {}
+	leaderboardStatusLabel.Text = (state and state.message) or "Session leaderboard"
+	leaderboardEmptyLabel.Visible = #entries == 0
+
+	for index, row in ipairs(leaderboardRows) do
+		local entry = entries[index]
+		row.frame.Visible = entry ~= nil
+		if entry then
+			row.rank.Text = tostring(entry.rank or index)
+			row.name.Text = entry.name or "Player"
+			row.wins.Text = tostring(entry.wins or 0)
+			row.streak.Text = tostring(entry.currentStreak or 0)
+			row.coins.Text = tostring(entry.coins or 0)
 		end
 	end
 end
@@ -1123,6 +1150,16 @@ local function onRewardStateChanged(rewardState)
 	updateRewardsPanel(rewardState)
 end
 
+local function onLeaderboardOpened(leaderboardState)
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(false, false, true)
+	updateLeaderboardPanel(leaderboardState)
+end
+
+local function onLeaderboardStateChanged(leaderboardState)
+	updateLeaderboardPanel(leaderboardState)
+end
+
 local function onLobbyFlowStateChanged(flowState)
 	latestLobbyFlowState = flowState.lobbyState or LOBBY_STATES.InLobby
 
@@ -1216,6 +1253,17 @@ for index = 1, 4 do
 	}
 end
 
+for index = 1, 6 do
+	leaderboardRows[index] = {
+		frame = findUi(leaderboardPanel, "LeaderboardRow" .. tostring(index)),
+		rank = findUi(leaderboardPanel, "LeaderboardRankLabel" .. tostring(index)),
+		name = findUi(leaderboardPanel, "LeaderboardNameLabel" .. tostring(index)),
+		wins = findUi(leaderboardPanel, "LeaderboardWinsLabel" .. tostring(index)),
+		streak = findUi(leaderboardPanel, "LeaderboardStreakLabel" .. tostring(index)),
+		coins = findUi(leaderboardPanel, "LeaderboardCoinsLabel" .. tostring(index)),
+	}
+end
+
 for _, descendant in ipairs(devGui:GetDescendants()) do
 	if descendant:IsA("TextButton") then
 		wireButtonInteractions(descendant)
@@ -1251,7 +1299,11 @@ closeShopButton.MouseButton1Click:Connect(function()
 end)
 
 closeRewardsButton.MouseButton1Click:Connect(function()
-	setCommercePanelsVisible(false, false)
+	setCommercePanelsVisible(false, false, false)
+end)
+
+closeLeaderboardButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false, false)
 end)
 
 for _, row in ipairs(shopRows) do
@@ -1313,4 +1365,6 @@ RemoteEvents.ShopOpened.OnClientEvent:Connect(onShopOpened)
 RemoteEvents.ShopStateChanged.OnClientEvent:Connect(onShopStateChanged)
 RemoteEvents.RewardsOpened.OnClientEvent:Connect(onRewardsOpened)
 RemoteEvents.RewardStateChanged.OnClientEvent:Connect(onRewardStateChanged)
+RemoteEvents.LeaderboardOpened.OnClientEvent:Connect(onLeaderboardOpened)
+RemoteEvents.LeaderboardStateChanged.OnClientEvent:Connect(onLeaderboardStateChanged)
 RemoteEvents.LobbyFlowStateChanged.OnClientEvent:Connect(onLobbyFlowStateChanged)

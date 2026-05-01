@@ -5,6 +5,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local LobbyWorldService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("LobbyWorldService"))
 local MatchService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("MatchService"))
 local EconomyService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("EconomyService"))
+local LeaderboardService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("LeaderboardService"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
 local PrototypeMatchServer = {}
@@ -202,8 +203,10 @@ local function awardRoundRewards(match)
 	match.rewardsGranted = true
 	latestRewardByPlayerId = {}
 
+	local isTieRound = match.isTie == true or match.winner == TIE_WINNER
+
 	for _, playerId in ipairs(match.players) do
-		local isTie = match.isTie == true or match.winner == TIE_WINNER
+		local isTie = isTieRound
 		local isWinner = playerId == match.winner
 		local reward = EconomyService.getMatchReward(isWinner, isTie)
 		latestRewardByPlayerId[tostring(playerId)] = reward
@@ -213,6 +216,8 @@ local function awardRoundRewards(match)
 			if isTie then "RoundTie" elseif isWinner then "RoundWin" else "RoundLoss"
 		)
 	end
+
+	LeaderboardService.recordRound(match.players, match.winner, isTieRound)
 end
 
 local function buildLobbyState()
@@ -361,6 +366,7 @@ local function detectPlayer(player)
 	print("[FastGuesser] player detected", player.UserId)
 	clearPlayerSessionState(player)
 	EconomyService.ensureAccount(player)
+	LeaderboardService.ensurePlayer(player)
 	menuByPlayerId[getPlayerKey(player)] = true
 	setPlayerLobbyState(player, LOBBY_STATES.InLobby)
 	fireLobbyStateChanged()
@@ -371,6 +377,7 @@ local function onPlayerRemoving(player)
 	local previousGameState = currentGameState
 	local wasPrototypePlayer = removePrototypePlayer(player)
 	clearPlayerSessionState(player)
+	LeaderboardService.clearSession(player)
 	menuByPlayerId[getPlayerKey(player)] = nil
 
 	if not wasPrototypePlayer then
@@ -397,6 +404,10 @@ end
 
 local function onRewardsPromptRequested(player)
 	EconomyService.openRewards(player)
+end
+
+local function onLeaderboardPromptRequested(player)
+	LeaderboardService.openLeaderboard(player)
 end
 
 local function onPlayMatchPromptRequested(player)
@@ -571,7 +582,7 @@ end
 
 function PrototypeMatchServer.start()
 	print("[FastGuesser] bootstrap started")
-	LobbyWorldService.createLobby(onPlayMatchPromptRequested, onShopPromptRequested, onRewardsPromptRequested)
+	LobbyWorldService.createLobby(onPlayMatchPromptRequested, onShopPromptRequested, onRewardsPromptRequested, onLeaderboardPromptRequested)
 
 	Players.PlayerAdded:Connect(detectPlayer)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
