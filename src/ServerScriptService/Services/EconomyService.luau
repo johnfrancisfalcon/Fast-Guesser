@@ -214,6 +214,7 @@ end
 local function saveProgression(playerOrUserId)
 	local playerKey = getPlayerKey(playerOrUserId)
 	if loadFailedByPlayerId[playerKey] then
+		-- Avoid overwriting real player data with defaults from a failed load.
 		warn("[FastGuesser] Skipping economy save because progression load failed for", playerKey)
 		return false
 	end
@@ -317,6 +318,7 @@ end
 function EconomyService.ensureAccount(player)
 	local playerKey = getPlayerKey(player)
 	if isLocalStudioPlayer(player) and not loadedByPlayerId[playerKey] then
+		-- Local Studio test clients use negative user ids and cannot use live DataStores.
 		applyLoadedData(player, nil)
 		loadedByPlayerId[playerKey] = true
 		sessionOnlyByPlayerId[playerKey] = true

@@ -100,6 +100,7 @@ local function findUi(parent, name)
 end
 
 local playButton = findUi(menuScreen, "PlayButton")
+local menuBackButton = findUi(menuScreen, "MenuBackButton")
 local howToPlayButton = findUi(menuScreen, "HowToPlayButton")
 local howToPlayPanel = findUi(menuScreen, "HowToPlayPanel")
 local closeHowToPlayButton = findUi(menuScreen, "CloseHowToPlayButton")
@@ -1733,6 +1734,14 @@ playButton.MouseButton1Click:Connect(function()
 	howToPlayPanel.Visible = false
 	RemoteEvents.LobbyEntered:FireServer()
 	setUiState(UI_STATES.ReadyUp)
+end)
+
+menuBackButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false, false, false, false)
+	howToPlayPanel.Visible = false
+	clearValidationMessages()
+	resetRoundUi()
+	setUiState(UI_STATES.LobbyWorld)
 end)
 
 howToPlayButton.MouseButton1Click:Connect(function()

@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 20
+local UI_VERSION = 21
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -382,8 +382,11 @@ local function createMenuScreen(parent)
 		COLORS.mutedText
 	)
 
-	local playButton = createButton(heroCard, "PlayButton", "Play Match", UDim2.new(1, 0, 0, 64), UDim2.fromOffset(0, 204), "Primary")
-	playButton.TextSize = 24
+	local playButton = createButton(heroCard, "PlayButton", "Play Match", UDim2.new(0.58, -8, 0, 58), UDim2.fromOffset(0, 210), "Primary")
+	playButton.TextSize = 22
+	local backButton = createButton(heroCard, "MenuBackButton", "Back to Lobby", UDim2.new(0.42, -8, 0, 58), UDim2.new(1, 0, 0, 210), "Secondary")
+	backButton.AnchorPoint = Vector2.new(1, 0)
+	backButton.TextSize = 17
 
 	local infoCard = createCard(shell, "MenuInfoCard", UDim2.new(0.47, -26, 0, 250), UDim2.new(0.53, 10, 0, 192), COLORS.panelAlt)
 	addPadding(infoCard, 26, 24, 26, 24)
@@ -964,6 +967,7 @@ local function isCurrentGui(gui)
 		and matchScreen
 		and gui:FindFirstChild("ResultScreen")
 		and gui:FindFirstChild("CloseHowToPlayButton", true)
+		and gui:FindFirstChild("MenuBackButton", true)
 		and matchScreen:FindFirstChild("SecretValidationLabel", true)
 		and matchScreen:FindFirstChild("GuessValidationLabel", true)
 		and matchScreen:FindFirstChild("SubmitSecretButton", true)

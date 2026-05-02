@@ -71,6 +71,7 @@ end
 local function saveStats(playerOrUserId)
 	local playerKey = getPlayerKey(playerOrUserId)
 	if loadFailedByPlayerId[playerKey] then
+		-- Avoid overwriting real stats with session defaults if DataStore loading failed.
 		warn("[FastGuesser] Skipping leaderboard save because stats load failed for", playerKey)
 		return false
 	end
@@ -146,6 +147,7 @@ end
 function LeaderboardService.ensurePlayer(player)
 	local playerKey = getPlayerKey(player)
 	if isLocalStudioPlayer(player) and not loadedByPlayerId[playerKey] then
+		-- Local Studio test clients use negative user ids and cannot use live DataStores.
 		ensureStats(player)
 		loadedByPlayerId[playerKey] = true
 		sessionOnlyByPlayerId[playerKey] = true
