@@ -72,6 +72,9 @@ return {
 	-- Server -> client. Payload: opens the coin shop panel.
 	ShopOpened = getOrCreateRemoteEvent("ShopOpened"),
 
+	-- Client -> server. Payload: none; requests the coin shop panel.
+	ShopOpenRequested = getOrCreateRemoteEvent("ShopOpenRequested"),
+
 	-- Server -> client. Payload: shop catalog, ownership, equipped items, and balance.
 	ShopStateChanged = getOrCreateRemoteEvent("ShopStateChanged"),
 
@@ -81,8 +84,29 @@ return {
 	-- Client -> server. Payload: item id string.
 	ShopEquipRequested = getOrCreateRemoteEvent("ShopEquipRequested"),
 
+	-- Server -> client. Payload: opens the Developer Product coin pack panel.
+	CoinPacksOpened = getOrCreateRemoteEvent("CoinPacksOpened"),
+
+	-- Server -> client. Payload: coin pack catalog and current balance.
+	CoinPackStateChanged = getOrCreateRemoteEvent("CoinPackStateChanged"),
+
+	-- Client -> server. Payload: none; requests the Developer Product coin pack panel.
+	CoinPacksOpenRequested = getOrCreateRemoteEvent("CoinPacksOpenRequested"),
+
+	-- Client -> server. Payload: pack id string.
+	CoinPackPurchaseRequested = getOrCreateRemoteEvent("CoinPackPurchaseRequested"),
+
+	-- Server -> all clients. Payload: equipped cosmetics by player id.
+	CosmeticsStateChanged = getOrCreateRemoteEvent("CosmeticsStateChanged"),
+
+	-- Client -> server. Payload: none; asks for the current equipped cosmetics snapshot.
+	CosmeticsStateRequested = getOrCreateRemoteEvent("CosmeticsStateRequested"),
+
 	-- Server -> client. Payload: opens the rewards panel.
 	RewardsOpened = getOrCreateRemoteEvent("RewardsOpened"),
+
+	-- Client -> server. Payload: none; requests the rewards panel.
+	RewardsOpenRequested = getOrCreateRemoteEvent("RewardsOpenRequested"),
 
 	-- Server -> client. Payload: reward claim status and balance.
 	RewardStateChanged = getOrCreateRemoteEvent("RewardStateChanged"),
@@ -93,8 +117,23 @@ return {
 	-- Server -> client. Payload: opens the session leaderboard panel.
 	LeaderboardOpened = getOrCreateRemoteEvent("LeaderboardOpened"),
 
+	-- Client -> server. Payload: none; requests the session leaderboard panel.
+	LeaderboardOpenRequested = getOrCreateRemoteEvent("LeaderboardOpenRequested"),
+
 	-- Server -> client. Payload: refreshed leaderboard entries.
 	LeaderboardStateChanged = getOrCreateRemoteEvent("LeaderboardStateChanged"),
+
+	-- Server -> client. Payload: opens the game modes panel.
+	ModesOpened = getOrCreateRemoteEvent("ModesOpened"),
+
+	-- Client -> server. Payload: none; requests the game modes panel.
+	ModesOpenRequested = getOrCreateRemoteEvent("ModesOpenRequested"),
+
+	-- Server -> all clients. Payload: selected prototype mode and catalog.
+	ModeStateChanged = getOrCreateRemoteEvent("ModeStateChanged"),
+
+	-- Client -> server. Payload: mode id string.
+	ModeSelectRequested = getOrCreateRemoteEvent("ModeSelectRequested"),
 
 	-- Client -> server. Payload: none; opts into the post-game rematch flow.
 	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),

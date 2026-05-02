@@ -23,6 +23,11 @@ local LOBBY_STATES = {
 
 local TIE_WINNER = "Tie"
 
+local MODES = {
+	Classic4Digit = "classic_4_digit",
+	HigherLower100 = "higher_lower_100",
+}
+
 local UI_STATES = {
 	-- No modal UI; the player is standing in the 3D lobby and can use the Play Match prompt.
 	LobbyWorld = "lobby_world",
@@ -86,6 +91,7 @@ local currencyHud = devGui:WaitForChild("CurrencyHud")
 local shopPanel = devGui:WaitForChild("ShopPanel")
 local rewardsPanel = devGui:WaitForChild("RewardsPanel")
 local leaderboardPanel = devGui:WaitForChild("LeaderboardPanel")
+local modesPanel = devGui:WaitForChild("ModesPanel")
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -164,6 +170,28 @@ local closeLeaderboardButton = findUi(leaderboardPanel, "CloseLeaderboardButton"
 local leaderboardStatusLabel = findUi(leaderboardPanel, "LeaderboardStatusLabel")
 local leaderboardEmptyLabel = findUi(leaderboardPanel, "LeaderboardEmptyLabel")
 
+local modeUi = {
+	secretHelpLabel = findUi(matchScreen, "SecretHelpLabel"),
+	guessHelpLabel = findUi(matchScreen, "GuessHelpLabel"),
+	yourLockedCard = findUi(matchScreen, "YourLockedCard"),
+	opponentLockedCard = findUi(matchScreen, "OpponentLockedCard"),
+	highLowSummaryLabel = findUi(matchScreen, "HighLowSummaryLabel"),
+	historyHintLabel = findUi(matchScreen, "HistoryHintLabel"),
+	closeModesButton = findUi(modesPanel, "CloseModesButton"),
+	modesStatusLabel = findUi(modesPanel, "ModesStatusLabel"),
+	buyCoinsHudButton = findUi(currencyHud, "BuyCoinsHudButton"),
+	coinPacksPanel = devGui:WaitForChild("CoinPacksPanel"),
+	openCoinPacksButton = findUi(shopPanel, "OpenCoinPacksButton"),
+}
+modeUi.closeCoinPacksButton = findUi(modeUi.coinPacksPanel, "CloseCoinPacksButton")
+modeUi.coinPacksBalanceLabel = findUi(modeUi.coinPacksPanel, "CoinPacksBalanceLabel")
+modeUi.coinPacksStatusLabel = findUi(modeUi.coinPacksPanel, "CoinPacksStatusLabel")
+modeUi.rewardNextClaimLabel = findUi(rewardsPanel, "RewardNextClaimLabel")
+modeUi.promptService = game:GetService("ProximityPromptService")
+modeUi.shopRows = {}
+modeUi.leaderboardRows = {}
+modeUi.modeRows = {}
+
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
 local latestLobbyState = nil
@@ -179,25 +207,61 @@ local lastGameState = nil
 local guessHistoryCount = 0
 local currencyBalance = 0
 local lastCurrencyDelta = 0
-local latestShopState = nil
-local latestRewardState = nil
-local shopRows = {}
-local leaderboardRows = {}
-local latestLeaderboardState = nil
 local setButtonEnabled
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
 end
 
-local function clampToFourDigits(value)
-	local digitsOnly = string.gsub(value, "%D", "")
-	return string.sub(digitsOnly, 1, 4)
+local function isOneToOneHundred(value)
+	if string.match(value, "^%d+$") == nil then
+		return false
+	end
+
+	local numberValue = tonumber(value)
+	return numberValue ~= nil and numberValue >= 1 and numberValue <= 100
 end
 
-local function bindFourDigitInput(textBox)
+local function getCurrentMode()
+	if latestRoundState and latestRoundState.selectedMode then
+		return latestRoundState.selectedMode
+	end
+
+	if latestLobbyState and latestLobbyState.selectedMode then
+		return latestLobbyState.selectedMode
+	end
+
+	if modeUi.latestModeState and modeUi.latestModeState.selectedMode then
+		return modeUi.latestModeState.selectedMode
+	end
+
+	return MODES.Classic4Digit
+end
+
+local function isHigherLowerMode()
+	return getCurrentMode() == MODES.HigherLower100
+end
+
+local function isValidModeInput(value)
+	if isHigherLowerMode() then
+		return isOneToOneHundred(value)
+	end
+
+	return isFourDigits(value)
+end
+
+local function getModeInputError()
+	return if isHigherLowerMode() then "Enter a number from 1 to 100." else "Enter exactly 4 digits."
+end
+
+local function clampModeInput(value)
+	local digitsOnly = string.gsub(value, "%D", "")
+	return string.sub(digitsOnly, 1, if isHigherLowerMode() then 3 else 4)
+end
+
+local function bindModeInput(textBox)
 	textBox:GetPropertyChangedSignal("Text"):Connect(function()
-		local clampedText = clampToFourDigits(textBox.Text)
+		local clampedText = clampModeInput(textBox.Text)
 		if textBox.Text ~= clampedText then
 			textBox.Text = clampedText
 		end
@@ -220,10 +284,12 @@ local function getLocalCurrencyValue(state, key)
 	return valuesByPlayerId[tostring(localPlayer.UserId)]
 end
 
-local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible)
+local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible, modesVisible, coinPacksVisible)
 	shopPanel.Visible = shopVisible == true
 	rewardsPanel.Visible = rewardsVisible == true
 	leaderboardPanel.Visible = leaderboardVisible == true
+	modesPanel.Visible = modesVisible == true
+	modeUi.coinPacksPanel.Visible = coinPacksVisible == true
 end
 
 local function getEquippedItemIdByCategory(equippedItems, category)
@@ -231,8 +297,8 @@ local function getEquippedItemIdByCategory(equippedItems, category)
 end
 
 local function updateShopPanel(shopState)
-	latestShopState = shopState or latestShopState
-	local state = latestShopState
+	modeUi.latestShopState = shopState or modeUi.latestShopState
+	local state = modeUi.latestShopState
 	shopBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
 
 	shopStatusLabel.Text = (state and state.message) or "Select an item."
@@ -241,7 +307,7 @@ local function updateShopPanel(shopState)
 	local ownedItems = state and state.ownedItems or {}
 	local equippedItems = state and state.equippedItems or {}
 
-	for index, row in ipairs(shopRows) do
+	for index, row in ipairs(modeUi.shopRows) do
 		local item = catalog[index]
 		row.frame.Visible = item ~= nil
 		if item then
@@ -252,21 +318,43 @@ local function updateShopPanel(shopState)
 			local equipped = getEquippedItemIdByCategory(equippedItems, item.category) == item.id
 			row.state.Text = if equipped then "Equipped" elseif owned then "Owned" else tostring(item.price) .. " coins"
 			setButtonEnabled(row.buyButton, not owned)
-			setButtonEnabled(row.equipButton, owned and not equipped)
+			setButtonEnabled(row.equipButton, owned)
 			row.buyButton.Text = if owned then "Owned" else "Buy"
-			row.equipButton.Text = if equipped then "Equipped" else "Equip"
+			row.equipButton.Text = if equipped then "Unequip" else "Equip"
+		end
+	end
+end
+
+local function updateCoinPacksPanel(coinPackState)
+	modeUi.latestCoinPackState = coinPackState or modeUi.latestCoinPackState
+	local state = modeUi.latestCoinPackState
+	modeUi.coinPacksBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
+	modeUi.coinPacksStatusLabel.Text = (state and state.message) or "Choose a coin pack."
+
+	local packs = state and state.packs or {}
+	for index, row in ipairs(modeUi.coinPackRows) do
+		local pack = packs[index]
+		row.frame.Visible = pack ~= nil
+		if pack then
+			row.frame:SetAttribute("PackId", pack.id)
+			row.name.Text = pack.name or "Coin Pack"
+			row.description.Text = pack.description or ""
+			row.amount.Text = "+" .. tostring(pack.coins or 0) .. " coins"
+			local configured = pack.productId and pack.productId > 0
+			row.button.Text = if configured then "Buy" else "Setup"
+			setButtonEnabled(row.button, configured)
 		end
 	end
 end
 
 local function updateLeaderboardPanel(leaderboardState)
-	latestLeaderboardState = leaderboardState or latestLeaderboardState
-	local state = latestLeaderboardState
+	modeUi.latestLeaderboardState = leaderboardState or modeUi.latestLeaderboardState
+	local state = modeUi.latestLeaderboardState
 	local entries = state and state.entries or {}
 	leaderboardStatusLabel.Text = (state and state.message) or "Session leaderboard"
 	leaderboardEmptyLabel.Visible = #entries == 0
 
-	for index, row in ipairs(leaderboardRows) do
+	for index, row in ipairs(modeUi.leaderboardRows) do
 		local entry = entries[index]
 		row.frame.Visible = entry ~= nil
 		if entry then
@@ -279,16 +367,185 @@ local function updateLeaderboardPanel(leaderboardState)
 	end
 end
 
+local function updateModesPanel(modeState)
+	modeUi.latestModeState = modeState or modeUi.latestModeState
+	local state = modeUi.latestModeState
+	local modes = state and state.modes or {}
+	local selectedMode = state and state.selectedMode or nil
+	modeUi.modesStatusLabel.Text = (state and state.message) or "Choose a mode."
+
+	for index, row in ipairs(modeUi.modeRows) do
+		local mode = modes[index]
+		row.frame.Visible = mode ~= nil
+		if mode then
+			row.frame:SetAttribute("ModeId", mode.id)
+			row.name.Text = mode.name or "Mode"
+			row.description.Text = mode.description or ""
+			local isSelected = mode.id == selectedMode
+			local isEnabled = mode.enabled == true
+			local statusText = mode.status or (if isEnabled then "Available" else "Coming soon")
+			row.state.Text = if isSelected then "Active" else statusText
+			row.button.Text = if isSelected then "Selected" elseif isEnabled then "Select" else "Coming Soon"
+			setButtonEnabled(row.button, isEnabled and not isSelected)
+		end
+	end
+end
+
 local function updateRewardsPanel(rewardState)
-	latestRewardState = rewardState or latestRewardState
-	local state = latestRewardState
+	modeUi.latestRewardState = rewardState or modeUi.latestRewardState
+	local state = modeUi.latestRewardState
 	rewardsBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
 	local claimAmount = (state and state.claimAmount) or 0
+	local canClaim = state == nil or state.canClaim == true
 	local claimed = state and state.claimed == true
 	rewardAmountLabel.Text = "+" .. tostring(claimAmount) .. " coins"
-	claimRewardButton.Text = if claimed then "Claimed" else "Claim Reward"
-	setButtonEnabled(claimRewardButton, not claimed)
-	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Reward already claimed this session." else "Reward ready."
+	claimRewardButton.Text = if canClaim then "Claim Daily Reward" else "Claimed Today"
+	setButtonEnabled(claimRewardButton, canClaim)
+	modeUi.rewardNextClaimLabel.Text = (state and state.nextClaimText) or "Ready now"
+	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then COLORS.successText else COLORS.disabledText
+	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
+
+	local segments = state and state.wheelSegments or {}
+	for index = 1, 5 do
+		local segment = findUi(rewardsPanel, "RewardWheelSegment" .. tostring(index))
+		local label = segment:FindFirstChild("RewardWheelSegmentLabel" .. tostring(index))
+		local rewardSegment = segments[index]
+		if label and label:IsA("TextLabel") then
+			label.Text = rewardSegment and tostring(rewardSegment.label) or "-"
+		end
+	end
+end
+
+local COSMETIC_INSTANCES = {
+	trail = "FastGuesserCosmeticTrail",
+	trailA = "FastGuesserCosmeticTrailA",
+	trailB = "FastGuesserCosmeticTrailB",
+	tag = "FastGuesserCosmeticTag",
+	spark = "FastGuesserCosmeticSpark",
+	light = "FastGuesserCosmeticLight",
+}
+
+local function getEquippedForPlayer(player)
+	local equippedByPlayerId = modeUi.latestCosmeticsState and modeUi.latestCosmeticsState.equippedByPlayerId or {}
+	return equippedByPlayerId[tostring(player.UserId)] or {}
+end
+
+local function destroyNamedChild(parent, childName)
+	local child = parent and parent:FindFirstChild(childName)
+	if child then
+		child:Destroy()
+	end
+end
+
+local function applyMidnightTheme(equippedItems)
+	local enabled = equippedItems.Theme == "theme_midnight"
+	background.BackgroundColor3 = if enabled then Color3.fromRGB(12, 9, 26) else Color3.fromRGB(8, 13, 22)
+	currencyHud.BackgroundColor3 = if enabled then Color3.fromRGB(34, 24, 62) else COLORS.historyEntry
+	local stroke = currencyHud:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = if enabled then Color3.fromRGB(174, 120, 255) else COLORS.historyEntryBorder
+		stroke.Transparency = if enabled then 0.08 else 0.18
+	end
+end
+
+local function isLobbyCosmeticVisible()
+	return latestLobbyFlowState == LOBBY_STATES.InLobby or latestLobbyFlowState == LOBBY_STATES.Matchmaking
+end
+
+local function applyCharacterCosmetics(player)
+	local character = player.Character
+	if not character then
+		return
+	end
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	local head = character:FindFirstChild("Head")
+	if not rootPart then
+		return
+	end
+
+	local equippedItems = getEquippedForPlayer(player)
+
+	destroyNamedChild(rootPart, COSMETIC_INSTANCES.trail)
+	destroyNamedChild(rootPart, COSMETIC_INSTANCES.trailA)
+	destroyNamedChild(rootPart, COSMETIC_INSTANCES.trailB)
+	if equippedItems.Trail == "trail_neon" then
+		local attachmentA = Instance.new("Attachment")
+		attachmentA.Name = COSMETIC_INSTANCES.trailA
+		attachmentA.Position = Vector3.new(-0.45, 0.8, 0)
+		attachmentA.Parent = rootPart
+
+		local attachmentB = Instance.new("Attachment")
+		attachmentB.Name = COSMETIC_INSTANCES.trailB
+		attachmentB.Position = Vector3.new(0.45, -0.8, 0)
+		attachmentB.Parent = rootPart
+
+		local trail = Instance.new("Trail")
+		trail.Name = COSMETIC_INSTANCES.trail
+		trail.Attachment0 = attachmentA
+		trail.Attachment1 = attachmentB
+		trail.Color = ColorSequence.new(Color3.fromRGB(85, 225, 255), Color3.fromRGB(172, 116, 255))
+		trail.Lifetime = 0.55
+		trail.LightEmission = 0.7
+		trail.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		trail.Parent = rootPart
+	end
+
+	if head then
+		destroyNamedChild(head, COSMETIC_INSTANCES.tag)
+		if equippedItems.Title == "tag_quick_cracker" then
+			local tag = Instance.new("BillboardGui")
+			tag.Name = COSMETIC_INSTANCES.tag
+			tag.Size = UDim2.fromOffset(180, 34)
+			tag.StudsOffset = Vector3.new(0, 2.8, 0)
+			tag.AlwaysOnTop = true
+			tag.Parent = head
+
+			local label = Instance.new("TextLabel")
+			label.Name = "TagLabel"
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Font = Enum.Font.GothamBlack
+			label.Text = "QUICK CRACKER"
+			label.TextColor3 = Color3.fromRGB(255, 232, 126)
+			label.TextStrokeColor3 = Color3.fromRGB(10, 12, 18)
+			label.TextStrokeTransparency = 0.15
+			label.TextSize = 16
+			label.Parent = tag
+		end
+	end
+
+	destroyNamedChild(rootPart, COSMETIC_INSTANCES.spark)
+	destroyNamedChild(rootPart, COSMETIC_INSTANCES.light)
+	if equippedItems.Lobby == "spark_lobby" and isLobbyCosmeticVisible() then
+		local spark = Instance.new("ParticleEmitter")
+		spark.Name = COSMETIC_INSTANCES.spark
+		spark.Color = ColorSequence.new(Color3.fromRGB(255, 215, 96), Color3.fromRGB(98, 169, 255))
+		spark.LightEmission = 0.75
+		spark.Rate = 12
+		spark.Lifetime = NumberRange.new(0.65, 1.15)
+		spark.Speed = NumberRange.new(0.8, 1.8)
+		spark.SpreadAngle = Vector2.new(40, 40)
+		spark.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		spark.Parent = rootPart
+
+		local light = Instance.new("PointLight")
+		light.Name = COSMETIC_INSTANCES.light
+		light.Color = Color3.fromRGB(255, 217, 112)
+		light.Range = 8
+		light.Brightness = 0.8
+		light.Parent = rootPart
+	end
+end
+
+local function applyAllCosmetics()
+	for _, player in ipairs(Players:GetPlayers()) do
+		applyCharacterCosmetics(player)
+	end
+	applyMidnightTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function setValidationMessage(label, message)
@@ -495,6 +752,28 @@ local function setDigitSlotValues(slots, values, filledColor, emptyColor)
 	end
 end
 
+local function setMatchPresentationForMode()
+	local higherLower = isHigherLowerMode()
+
+	modeUi.secretHelpLabel.Text = if higherLower
+		then "Choose the 1-100 number your opponent is trying to find."
+		else "Choose the 4-digit code your opponent is trying to reveal."
+	modeUi.guessHelpLabel.Text = if higherLower
+		then "Submit guesses from 1 to 100. Feedback says whether the answer is higher, lower, or correct."
+		else "Submit guesses on your turn. Exact digits lock permanently into place."
+	secretTextBox.PlaceholderText = if higherLower then "Enter 1-100" else "Enter 4 digits"
+	guessTextBox.PlaceholderText = if higherLower then "Enter 1-100" else "Enter 4 digits"
+	modeUi.historyHintLabel.Text = if higherLower
+		then "Each entry shows the guess and whether the answer is higher, lower, or correct."
+		else "Each entry shows the guess and currently locked feedback."
+	modeUi.yourLockedCard.Visible = not higherLower
+	modeUi.opponentLockedCard.Visible = not higherLower
+	modeUi.highLowSummaryLabel.Visible = higherLower
+	modeUi.highLowSummaryLabel.Text = if higherLower
+		then "No locked digits in this mode. Use Higher / Lower history to narrow the hidden number."
+		else ""
+end
+
 function setButtonEnabled(button, enabled)
 	button.Active = enabled
 	button.AutoButtonColor = false
@@ -680,7 +959,7 @@ local function addGuessHistoryEntry(result)
 	feedbackLabel.Size = UDim2.new(1, 0, 0, 22)
 	feedbackLabel.BackgroundTransparency = 1
 	feedbackLabel.Font = Enum.Font.GothamBold
-	feedbackLabel.Text = "Locked: " .. formatLockedPositions(result.matches)
+	feedbackLabel.Text = if result.feedback then "Feedback: " .. tostring(result.feedback) else "Locked: " .. formatLockedPositions(result.matches)
 	feedbackLabel.TextColor3 = COLORS.disabledText
 	feedbackLabel.TextSize = 15
 	feedbackLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -688,6 +967,7 @@ local function addGuessHistoryEntry(result)
 end
 
 local function resetRoundUi()
+	setMatchPresentationForMode()
 	hasSubmittedSecret = false
 	isGameOver = false
 	secretTextBox.Text = ""
@@ -709,6 +989,11 @@ local function resetRoundUi()
 end
 
 local function updateLockedLabels(roundState)
+	setMatchPresentationForMode()
+	if isHigherLowerMode() then
+		return
+	end
+
 	local localPlayerId = localPlayer.UserId
 	local opponentId = getOpponentId(roundState)
 	local lockedPositionsByPlayerId = roundState.lockedPositionsByPlayerId or {}
@@ -1015,6 +1300,7 @@ local function setUiState(nextUiState)
 
 	currentUiState = nextUiState
 	renderUi()
+	applyAllCosmetics()
 end
 
 local function syncUiFromServer()
@@ -1140,6 +1426,16 @@ local function onShopStateChanged(shopState)
 	updateShopPanel(shopState)
 end
 
+local function onCoinPacksOpened(coinPackState)
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(false, false, false, false, true)
+	updateCoinPacksPanel(coinPackState)
+end
+
+local function onCoinPackStateChanged(coinPackState)
+	updateCoinPacksPanel(coinPackState)
+end
+
 local function onRewardsOpened(rewardState)
 	howToPlayPanel.Visible = false
 	setCommercePanelsVisible(false, true)
@@ -1160,6 +1456,25 @@ local function onLeaderboardStateChanged(leaderboardState)
 	updateLeaderboardPanel(leaderboardState)
 end
 
+local function onModesOpened(modeState)
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(false, false, false, true)
+	updateModesPanel(modeState)
+end
+
+local function onModeStateChanged(modeState)
+	updateModesPanel(modeState)
+	secretTextBox.Text = clampModeInput(secretTextBox.Text)
+	guessTextBox.Text = clampModeInput(guessTextBox.Text)
+	setMatchPresentationForMode()
+	clearValidationMessages()
+end
+
+local function onCosmeticsStateChanged(cosmeticsState)
+	modeUi.latestCosmeticsState = cosmeticsState
+	applyAllCosmetics()
+end
+
 local function onLobbyFlowStateChanged(flowState)
 	latestLobbyFlowState = flowState.lobbyState or LOBBY_STATES.InLobby
 
@@ -1177,13 +1492,13 @@ local function onLobbyFlowStateChanged(flowState)
 end
 
 secretTextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	if isFourDigits(secretTextBox.Text) then
+	if isValidModeInput(secretTextBox.Text) then
 		setValidationMessage(secretValidationLabel, "")
 	end
 end)
 
 guessTextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	if isFourDigits(guessTextBox.Text) then
+	if isValidModeInput(guessTextBox.Text) then
 		setValidationMessage(guessValidationLabel, "")
 	end
 end)
@@ -1194,8 +1509,8 @@ local function submitSecret()
 	end
 
 	local secret = secretTextBox.Text
-	if not isFourDigits(secret) then
-		setValidationMessage(secretValidationLabel, "Enter exactly 4 digits.")
+	if not isValidModeInput(secret) then
+		setValidationMessage(secretValidationLabel, getModeInputError())
 		return
 	end
 
@@ -1213,8 +1528,8 @@ local function submitGuess()
 	end
 
 	local guess = guessTextBox.Text
-	if not isFourDigits(guess) then
-		setValidationMessage(guessValidationLabel, "Enter exactly 4 digits.")
+	if not isValidModeInput(guess) then
+		setValidationMessage(guessValidationLabel, getModeInputError())
 		return
 	end
 
@@ -1238,12 +1553,36 @@ local function requestRestart()
 	RemoteEvents.RematchRequested:FireServer()
 end
 
+local function onLobbyPromptTriggered(prompt)
+	if not prompt then
+		return
+	end
+
+	if prompt.Name == "PlayMatchPrompt" then
+		setCommercePanelsVisible(false, false, false, false, false)
+		howToPlayPanel.Visible = false
+		setUiState(UI_STATES.Menu)
+	elseif prompt.Name == "ShopPrompt" then
+		howToPlayPanel.Visible = false
+		RemoteEvents.ShopOpenRequested:FireServer()
+	elseif prompt.Name == "RewardsPrompt" then
+		howToPlayPanel.Visible = false
+		RemoteEvents.RewardsOpenRequested:FireServer()
+	elseif prompt.Name == "LeaderboardPrompt" then
+		howToPlayPanel.Visible = false
+		RemoteEvents.LeaderboardOpenRequested:FireServer()
+	elseif prompt.Name == "ModesPrompt" then
+		howToPlayPanel.Visible = false
+		RemoteEvents.ModesOpenRequested:FireServer()
+	end
+end
+
 guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, guessHistoryList.AbsoluteContentSize.Y + 12)
 end)
 
 for index = 1, 4 do
-	shopRows[index] = {
+	modeUi.shopRows[index] = {
 		frame = findUi(shopPanel, "ShopItemRow" .. tostring(index)),
 		name = findUi(shopPanel, "ShopItemNameLabel" .. tostring(index)),
 		meta = findUi(shopPanel, "ShopItemMetaLabel" .. tostring(index)),
@@ -1253,14 +1592,35 @@ for index = 1, 4 do
 	}
 end
 
+modeUi.coinPackRows = {}
+for index = 1, 3 do
+	modeUi.coinPackRows[index] = {
+		frame = findUi(modeUi.coinPacksPanel, "CoinPackRow" .. tostring(index)),
+		name = findUi(modeUi.coinPacksPanel, "CoinPackNameLabel" .. tostring(index)),
+		description = findUi(modeUi.coinPacksPanel, "CoinPackDescriptionLabel" .. tostring(index)),
+		amount = findUi(modeUi.coinPacksPanel, "CoinPackAmountLabel" .. tostring(index)),
+		button = findUi(modeUi.coinPacksPanel, "CoinPackBuyButton" .. tostring(index)),
+	}
+end
+
 for index = 1, 6 do
-	leaderboardRows[index] = {
+	modeUi.leaderboardRows[index] = {
 		frame = findUi(leaderboardPanel, "LeaderboardRow" .. tostring(index)),
 		rank = findUi(leaderboardPanel, "LeaderboardRankLabel" .. tostring(index)),
 		name = findUi(leaderboardPanel, "LeaderboardNameLabel" .. tostring(index)),
 		wins = findUi(leaderboardPanel, "LeaderboardWinsLabel" .. tostring(index)),
 		streak = findUi(leaderboardPanel, "LeaderboardStreakLabel" .. tostring(index)),
 		coins = findUi(leaderboardPanel, "LeaderboardCoinsLabel" .. tostring(index)),
+	}
+end
+
+for index = 1, 2 do
+	modeUi.modeRows[index] = {
+		frame = findUi(modesPanel, "ModeRow" .. tostring(index)),
+		name = findUi(modesPanel, "ModeNameLabel" .. tostring(index)),
+		description = findUi(modesPanel, "ModeDescriptionLabel" .. tostring(index)),
+		state = findUi(modesPanel, "ModeStateLabel" .. tostring(index)),
+		button = findUi(modesPanel, "ModeSelectButton" .. tostring(index)),
 	}
 end
 
@@ -1274,8 +1634,8 @@ setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
 setRestartControlsEnabled(false)
 updateCurrencyHud(0)
-bindFourDigitInput(secretTextBox)
-bindFourDigitInput(guessTextBox)
+bindModeInput(secretTextBox)
+bindModeInput(guessTextBox)
 setUiState(UI_STATES.LobbyWorld)
 
 playButton.MouseButton1Click:Connect(function()
@@ -1298,6 +1658,23 @@ closeShopButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false)
 end)
 
+modeUi.openCoinPacksButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false, false, false, true)
+	updateCoinPacksPanel()
+	RemoteEvents.CoinPacksOpenRequested:FireServer()
+end)
+
+modeUi.buyCoinsHudButton.MouseButton1Click:Connect(function()
+	howToPlayPanel.Visible = false
+	setCommercePanelsVisible(false, false, false, false, true)
+	updateCoinPacksPanel()
+	RemoteEvents.CoinPacksOpenRequested:FireServer()
+end)
+
+modeUi.closeCoinPacksButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false, false, false, false)
+end)
+
 closeRewardsButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false)
 end)
@@ -1306,7 +1683,11 @@ closeLeaderboardButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false)
 end)
 
-for _, row in ipairs(shopRows) do
+modeUi.closeModesButton.MouseButton1Click:Connect(function()
+	setCommercePanelsVisible(false, false, false, false)
+end)
+
+for _, row in ipairs(modeUi.shopRows) do
 	row.buyButton.MouseButton1Click:Connect(function()
 		local itemId = row.frame:GetAttribute("ItemId")
 		if itemId then
@@ -1319,6 +1700,28 @@ for _, row in ipairs(shopRows) do
 		if itemId then
 			shopStatusLabel.Text = "Equipping..."
 			RemoteEvents.ShopEquipRequested:FireServer(itemId)
+		end
+	end)
+end
+
+for _, row in ipairs(modeUi.coinPackRows) do
+	row.button.MouseButton1Click:Connect(function()
+		local packId = row.frame:GetAttribute("PackId")
+		if packId then
+			modeUi.coinPacksStatusLabel.Text = "Opening Roblox purchase prompt..."
+			setButtonEnabled(row.button, false)
+			RemoteEvents.CoinPackPurchaseRequested:FireServer(packId)
+		end
+	end)
+end
+
+for _, row in ipairs(modeUi.modeRows) do
+	row.button.MouseButton1Click:Connect(function()
+		local modeId = row.frame:GetAttribute("ModeId")
+		if modeId then
+			modeUi.modesStatusLabel.Text = "Selecting..."
+			setButtonEnabled(row.button, false)
+			RemoteEvents.ModeSelectRequested:FireServer(modeId)
 		end
 	end)
 end
@@ -1353,6 +1756,7 @@ submitSecretButton.MouseButton1Click:Connect(submitSecret)
 submitGuessButton.MouseButton1Click:Connect(submitGuess)
 restartButton.MouseButton1Click:Connect(requestRestart)
 resultPlayAgainButton.MouseButton1Click:Connect(requestRestart)
+modeUi.promptService.PromptTriggered:Connect(onLobbyPromptTriggered)
 
 RemoteEvents.SecretRequested.OnClientEvent:Connect(onSecretRequested)
 RemoteEvents.TurnChanged.OnClientEvent:Connect(onTurnChanged)
@@ -1363,8 +1767,27 @@ RemoteEvents.LobbyStateChanged.OnClientEvent:Connect(onLobbyStateChanged)
 RemoteEvents.CurrencyChanged.OnClientEvent:Connect(onCurrencyChanged)
 RemoteEvents.ShopOpened.OnClientEvent:Connect(onShopOpened)
 RemoteEvents.ShopStateChanged.OnClientEvent:Connect(onShopStateChanged)
+RemoteEvents.CoinPacksOpened.OnClientEvent:Connect(onCoinPacksOpened)
+RemoteEvents.CoinPackStateChanged.OnClientEvent:Connect(onCoinPackStateChanged)
 RemoteEvents.RewardsOpened.OnClientEvent:Connect(onRewardsOpened)
 RemoteEvents.RewardStateChanged.OnClientEvent:Connect(onRewardStateChanged)
 RemoteEvents.LeaderboardOpened.OnClientEvent:Connect(onLeaderboardOpened)
 RemoteEvents.LeaderboardStateChanged.OnClientEvent:Connect(onLeaderboardStateChanged)
+RemoteEvents.ModesOpened.OnClientEvent:Connect(onModesOpened)
+RemoteEvents.ModeStateChanged.OnClientEvent:Connect(onModeStateChanged)
+RemoteEvents.CosmeticsStateChanged.OnClientEvent:Connect(onCosmeticsStateChanged)
 RemoteEvents.LobbyFlowStateChanged.OnClientEvent:Connect(onLobbyFlowStateChanged)
+RemoteEvents.CosmeticsStateRequested:FireServer()
+
+
+for _, player in ipairs(Players:GetPlayers()) do
+	player.CharacterAdded:Connect(function()
+		task.defer(applyAllCosmetics)
+	end)
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.defer(applyAllCosmetics)
+	end)
+end)

@@ -6,6 +6,10 @@ local GuessValidator = require(script.Parent.GuessValidator)
 local MatchService = {}
 
 local TIE_WINNER = "Tie"
+local MODES = {
+	Classic4Digit = "classic_4_digit",
+	HigherLower100 = "higher_lower_100",
+}
 local nextMatchId = 0
 local matches = {}
 
@@ -39,7 +43,71 @@ local function advanceTurn(match)
 	end
 end
 
-function MatchService.createMatch(playerOneId, playerTwoId)
+local function getMode(match)
+	return match.mode or MODES.Classic4Digit
+end
+
+local function validateSecretForMode(mode, secret)
+	if mode == MODES.HigherLower100 then
+		return GuessValidator.validateHighLowSecret(secret)
+	end
+
+	return GuessValidator.validateSecret(secret)
+end
+
+local function validateGuessForMode(mode, guess)
+	if mode == MODES.HigherLower100 then
+		return GuessValidator.validateHighLowGuess(guess)
+	end
+
+	return GuessValidator.validateGuess(guess)
+end
+
+local function buildClassicGuessResult(match, playerId, opponentSecret, guess)
+	local exactMatches = FeedbackLogic.getExactMatches(opponentSecret, guess)
+	local locked = FeedbackLogic.mergeLocked(match.lockedPositions[playerId], exactMatches)
+
+	match.lockedPositions[playerId] = locked
+
+	return {
+		mode = MODES.Classic4Digit,
+		playerId = playerId,
+		guess = guess,
+		matches = exactMatches,
+		lockedPositions = locked,
+		isSolved = FeedbackLogic.isSolved(locked),
+	}
+end
+
+local function buildHigherLowerGuessResult(playerId, opponentSecret, guess)
+	local secretNumber = tonumber(opponentSecret)
+	local guessNumber = tonumber(guess)
+	local feedback = "Correct"
+
+	if guessNumber < secretNumber then
+		feedback = "Higher"
+	elseif guessNumber > secretNumber then
+		feedback = "Lower"
+	end
+
+	return {
+		mode = MODES.HigherLower100,
+		playerId = playerId,
+		guess = tostring(guessNumber),
+		feedback = feedback,
+		isSolved = feedback == "Correct",
+	}
+end
+
+local function buildGuessResult(match, playerId, opponentSecret, guess)
+	if getMode(match) == MODES.HigherLower100 then
+		return buildHigherLowerGuessResult(playerId, opponentSecret, guess)
+	end
+
+	return buildClassicGuessResult(match, playerId, opponentSecret, guess)
+end
+
+function MatchService.createMatch(playerOneId, playerTwoId, mode)
 	if not playerOneId or not playerTwoId then
 		return nil, "A match needs two players."
 	end
@@ -52,6 +120,7 @@ function MatchService.createMatch(playerOneId, playerTwoId)
 
 	local match = {
 		id = nextMatchId,
+		mode = mode or MODES.Classic4Digit,
 		players = { playerOneId, playerTwoId },
 		secrets = {},
 		lockedPositions = {
@@ -106,12 +175,12 @@ function MatchService.setPlayerSecret(matchId, playerId, secret)
 		return false, "Player is not in this match."
 	end
 
-	local isValid, message = GuessValidator.validateSecret(secret)
+	local isValid, message = validateSecretForMode(getMode(match), secret)
 	if not isValid then
 		return false, message
 	end
 
-	match.secrets[playerId] = secret
+	match.secrets[playerId] = if getMode(match) == MODES.HigherLower100 then tostring(tonumber(secret)) else secret
 
 	if bothSecretsReady(match) and not match.currentTurn then
 		match.currentTurn = match.players[1]
@@ -143,24 +212,13 @@ function MatchService.submitGuess(matchId, playerId, guess)
 		return false, "It is not this player's turn."
 	end
 
-	local isValid, message = GuessValidator.validateGuess(guess)
+	local isValid, message = validateGuessForMode(getMode(match), guess)
 	if not isValid then
 		return false, message
 	end
 
 	local opponentSecret = match.secrets[opponentId]
-	local exactMatches = FeedbackLogic.getExactMatches(opponentSecret, guess)
-	local locked = FeedbackLogic.mergeLocked(match.lockedPositions[playerId], exactMatches)
-
-	match.lockedPositions[playerId] = locked
-
-	local result = {
-		playerId = playerId,
-		guess = guess,
-		matches = exactMatches,
-		lockedPositions = locked,
-		isSolved = FeedbackLogic.isSolved(locked),
-	}
+	local result = buildGuessResult(match, playerId, opponentSecret, guess)
 
 	table.insert(match.guessHistory, result)
 

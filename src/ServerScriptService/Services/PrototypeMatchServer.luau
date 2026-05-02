@@ -26,11 +26,34 @@ local LOBBY_STATES = {
 	PostRound = "PostRound",
 }
 
+local MODES = {
+	Classic4Digit = "classic_4_digit",
+	HigherLower100 = "higher_lower_100",
+}
+
+local MODE_CATALOG = {
+	{
+		id = MODES.Classic4Digit,
+		name = "Classic 4-Digit",
+		description = "Set a 4-digit secret and lock exact-position matches before your opponent solves yours.",
+		status = "Available",
+		enabled = true,
+	},
+	{
+		id = MODES.HigherLower100,
+		name = "1-100 Higher/Lower",
+		description = "Guess a secret number from 1 to 100 with Higher, Lower, or Correct feedback.",
+		status = "Playable",
+		enabled = true,
+	},
+}
+
 local prototypePlayers = {}
 local prototypeMatchId = nil
 local secretRequestLoopStarted = false
 local secretRequestToken = 0
 local currentGameState = GAME_STATES.WaitingForPlayers
+local selectedMode = MODES.Classic4Digit
 local lobbyStateByPlayerId = {}
 local menuByPlayerId = {}
 local lobbyReadyByPlayerId = {}
@@ -53,6 +76,31 @@ local function getPrototypeMatch()
 	end
 
 	return MatchService.getMatch(prototypeMatchId)
+end
+
+local function getModeById(modeId)
+	for _, mode in ipairs(MODE_CATALOG) do
+		if mode.id == modeId then
+			return mode
+		end
+	end
+
+	return nil
+end
+
+local function buildModeState(message)
+	local selectedModeInfo = getModeById(selectedMode)
+	local selectedModeName = selectedModeInfo and selectedModeInfo.name or "Classic 4-Digit"
+
+	return {
+		selectedMode = selectedMode,
+		modes = MODE_CATALOG,
+		message = message or (selectedModeName .. " is active."),
+	}
+end
+
+local function fireModeStateChanged(message)
+	RemoteEvents.ModeStateChanged:FireAllClients(buildModeState(message))
 end
 
 local function getPlayerKey(playerOrUserId)
@@ -187,6 +235,7 @@ local function buildRoundState(match)
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
 		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
 		latestRewardByPlayerId = latestRewardByPlayerId,
+		selectedMode = selectedMode,
 		sessionNotice = sessionNotice,
 	}
 end
@@ -240,6 +289,7 @@ local function buildLobbyState()
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
 		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
 		latestRewardByPlayerId = latestRewardByPlayerId,
+		selectedMode = selectedMode,
 		sessionNotice = sessionNotice,
 	}
 end
@@ -285,7 +335,7 @@ end
 local function createPrototypeMatch()
 	local playerOne = prototypePlayers[1]
 	local playerTwo = prototypePlayers[2]
-	local prototypeMatch, createError = MatchService.createMatch(playerOne.UserId, playerTwo.UserId)
+	local prototypeMatch, createError = MatchService.createMatch(playerOne.UserId, playerTwo.UserId, selectedMode)
 	if not prototypeMatch then
 		error(createError)
 	end
@@ -354,10 +404,12 @@ end
 
 local function buildGuessResultPayload(result)
 	return {
+		mode = result.mode or selectedMode,
 		playerId = result.playerId,
 		guess = result.guess,
-		matches = toDensePositionTable(result.matches),
-		lockedPositions = toDensePositionTable(result.lockedPositions),
+		feedback = result.feedback,
+		matches = if result.matches then toDensePositionTable(result.matches) else nil,
+		lockedPositions = if result.lockedPositions then toDensePositionTable(result.lockedPositions) else nil,
 		isSolved = result.isSolved,
 	}
 end
@@ -376,7 +428,10 @@ end
 local function onPlayerRemoving(player)
 	local previousGameState = currentGameState
 	local wasPrototypePlayer = removePrototypePlayer(player)
+	EconomyService.savePlayer(player)
+	LeaderboardService.savePlayer(player)
 	clearPlayerSessionState(player)
+	EconomyService.clearSession(player)
 	LeaderboardService.clearSession(player)
 	menuByPlayerId[getPlayerKey(player)] = nil
 
@@ -399,18 +454,50 @@ end
 local onRestartRequested
 
 local function onShopPromptRequested(player)
+	print("[FastGuesser] shop prompt", player.UserId)
 	EconomyService.openShop(player)
 end
 
 local function onRewardsPromptRequested(player)
+	print("[FastGuesser] rewards prompt", player.UserId)
 	EconomyService.openRewards(player)
 end
 
 local function onLeaderboardPromptRequested(player)
+	print("[FastGuesser] leaderboard prompt", player.UserId)
 	LeaderboardService.openLeaderboard(player)
 end
 
+local function onModesPromptRequested(player)
+	print("[FastGuesser] modes prompt", player.UserId)
+	RemoteEvents.ModesOpened:FireClient(player, buildModeState())
+end
+
+local function onModeSelectRequested(player, modeId)
+	local mode = getModeById(modeId)
+	if not mode then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("That mode is not available."))
+		return
+	end
+
+	if not mode.enabled then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState(mode.name .. " is coming soon."))
+		return
+	end
+
+	if currentGameState ~= GAME_STATES.WaitingForPlayers or prototypeMatchId then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("Mode selection is locked once a round is active."))
+		return
+	end
+
+	selectedMode = mode.id
+	fireModeStateChanged(mode.name .. " selected.")
+	fireLobbyStateChanged()
+	fireRoundStateChanged()
+end
+
 local function onPlayMatchPromptRequested(player)
+	print("[FastGuesser] play match prompt", player.UserId)
 	menuByPlayerId[getPlayerKey(player)] = true
 	sessionNotice = nil
 	RemoteEvents.LobbyFlowStateChanged:FireClient(player, {
@@ -582,10 +669,32 @@ end
 
 function PrototypeMatchServer.start()
 	print("[FastGuesser] bootstrap started")
-	LobbyWorldService.createLobby(onPlayMatchPromptRequested, onShopPromptRequested, onRewardsPromptRequested, onLeaderboardPromptRequested)
+	local monetizationService = nil
+	local monetizationOk, monetizationResult = pcall(function()
+		return require(ServerScriptService:WaitForChild("Services"):WaitForChild("MonetizationService"))
+	end)
+	if monetizationOk then
+		monetizationService = monetizationResult
+		monetizationService.start()
+	else
+		warn("[FastGuesser] Monetization disabled for this session:", monetizationResult)
+	end
+	LobbyWorldService.createLobby(
+		onPlayMatchPromptRequested,
+		onShopPromptRequested,
+		onRewardsPromptRequested,
+		onLeaderboardPromptRequested,
+		onModesPromptRequested
+	)
 
 	Players.PlayerAdded:Connect(detectPlayer)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)
+	game:BindToClose(function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			EconomyService.savePlayer(player)
+			LeaderboardService.savePlayer(player)
+		end
+	end)
 	RemoteEvents.SecretSubmitted.OnServerEvent:Connect(onSecretSubmitted)
 	RemoteEvents.GuessSubmitted.OnServerEvent:Connect(onGuessSubmitted)
 	RemoteEvents.LobbyEntered.OnServerEvent:Connect(onLobbyEntered)
@@ -599,9 +708,27 @@ function PrototypeMatchServer.start()
 	RemoteEvents.ShopEquipRequested.OnServerEvent:Connect(function(player, itemId)
 		EconomyService.equipItem(player, itemId)
 	end)
+	RemoteEvents.ShopOpenRequested.OnServerEvent:Connect(onShopPromptRequested)
+	RemoteEvents.RewardsOpenRequested.OnServerEvent:Connect(onRewardsPromptRequested)
+	RemoteEvents.LeaderboardOpenRequested.OnServerEvent:Connect(onLeaderboardPromptRequested)
+	RemoteEvents.ModesOpenRequested.OnServerEvent:Connect(onModesPromptRequested)
+	RemoteEvents.CoinPacksOpenRequested.OnServerEvent:Connect(function(player)
+		if monetizationService then
+			monetizationService.openCoinPacks(player)
+		end
+	end)
+	RemoteEvents.CoinPackPurchaseRequested.OnServerEvent:Connect(function(player, packId)
+		if monetizationService then
+			monetizationService.requestPurchase(player, packId)
+		end
+	end)
 	RemoteEvents.RewardClaimRequested.OnServerEvent:Connect(function(player)
 		EconomyService.claimTestReward(player)
 	end)
+	RemoteEvents.CosmeticsStateRequested.OnServerEvent:Connect(function(player)
+		EconomyService.sendCosmeticsState(player)
+	end)
+	RemoteEvents.ModeSelectRequested.OnServerEvent:Connect(onModeSelectRequested)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		detectPlayer(player)
@@ -609,6 +736,7 @@ function PrototypeMatchServer.start()
 
 	fireLobbyStateChanged()
 	fireRoundStateChanged()
+	fireModeStateChanged()
 
 	_G.FastGuesserPrototype = {
 		setPlayerSecret = setPlayerSecret,
