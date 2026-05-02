@@ -49,6 +49,8 @@ local MODE_CATALOG = {
 }
 
 local prototypePlayers = {}
+local modeQueuesByMode = {}
+local matchmakingModeByPlayerId = {}
 local prototypeMatchId = nil
 local secretRequestLoopStarted = false
 local secretRequestToken = 0
@@ -111,6 +113,104 @@ local function getPlayerKey(playerOrUserId)
 	return tostring(playerOrUserId)
 end
 
+local function buildModeStateForMode(modeId, message)
+	local modeInfo = getModeById(modeId)
+	local modeName = modeInfo and modeInfo.name or "Classic 4-Digit"
+
+	return {
+		selectedMode = modeId,
+		modes = MODE_CATALOG,
+		message = message or (modeName .. " is active."),
+	}
+end
+
+local function getModeQueue(modeId)
+	modeQueuesByMode[modeId] = modeQueuesByMode[modeId] or {}
+	return modeQueuesByMode[modeId]
+end
+
+local function removeFromQueue(queue, player)
+	for index, queuedPlayer in ipairs(queue) do
+		if queuedPlayer == player then
+			table.remove(queue, index)
+			return true
+		end
+	end
+
+	return false
+end
+
+local function removePlayerFromModeQueues(player)
+	local removed = false
+	for _, queue in pairs(modeQueuesByMode) do
+		removed = removeFromQueue(queue, player) or removed
+	end
+
+	return removed
+end
+
+local function isQueuedPlayer(player)
+	for _, queue in pairs(modeQueuesByMode) do
+		for _, queuedPlayer in ipairs(queue) do
+			if queuedPlayer == player then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+local function addPlayerToModeQueue(player, modeId)
+	removePlayerFromModeQueues(player)
+	local queue = getModeQueue(modeId)
+	table.insert(queue, player)
+	matchmakingModeByPlayerId[getPlayerKey(player)] = modeId
+	lobbyReadyByPlayerId[getPlayerKey(player)] = nil
+end
+
+local function getWaitingPlayersForMode(modeId)
+	local queue = getModeQueue(modeId)
+	local waitingPlayers = {}
+
+	for _, queuedPlayer in ipairs(queue) do
+		if queuedPlayer.Parent == Players then
+			table.insert(waitingPlayers, queuedPlayer)
+		end
+	end
+
+	modeQueuesByMode[modeId] = waitingPlayers
+	return waitingPlayers
+end
+
+local function getLobbyPlayersForViewer(viewer)
+	if prototypeMatchId then
+		return prototypePlayers
+	end
+
+	if viewer then
+		for _, prototypePlayer in ipairs(prototypePlayers) do
+			if prototypePlayer == viewer then
+				return prototypePlayers
+			end
+		end
+	end
+
+	local viewerMode = viewer and matchmakingModeByPlayerId[getPlayerKey(viewer)] or selectedMode
+	return getWaitingPlayersForMode(viewerMode or selectedMode)
+end
+
+local function setPrototypePlayersForMode(modeId)
+	local queue = getWaitingPlayersForMode(modeId)
+	prototypePlayers = {}
+
+	for index = 1, math.min(2, #queue) do
+		prototypePlayers[index] = queue[index]
+	end
+
+	selectedMode = modeId
+end
+
 local function isPrototypePlayer(player)
 	for _, prototypePlayer in ipairs(prototypePlayers) do
 		if prototypePlayer == player then
@@ -122,6 +222,9 @@ local function isPrototypePlayer(player)
 end
 
 local function removePrototypePlayer(player)
+	removePlayerFromModeQueues(player)
+	matchmakingModeByPlayerId[getPlayerKey(player)] = nil
+
 	for index, prototypePlayer in ipairs(prototypePlayers) do
 		if prototypePlayer == player then
 			table.remove(prototypePlayers, index)
@@ -134,10 +237,12 @@ end
 
 local function clearPlayerSessionState(player)
 	local playerKey = getPlayerKey(player)
+	removePlayerFromModeQueues(player)
 	menuByPlayerId[playerKey] = nil
 	lobbyStateByPlayerId[playerKey] = nil
 	lobbyReadyByPlayerId[playerKey] = nil
 	rematchReadyByPlayerId[playerKey] = nil
+	matchmakingModeByPlayerId[playerKey] = nil
 end
 
 local function setPlayerLobbyState(player, lobbyState)
@@ -192,9 +297,10 @@ local function hasSubmittedSecret(player)
 	return match.secrets[player.UserId] ~= nil
 end
 
-local function buildRoundState(match)
-	local playerOneId = prototypePlayers[1] and prototypePlayers[1].UserId or nil
-	local playerTwoId = prototypePlayers[2] and prototypePlayers[2].UserId or nil
+local function buildRoundState(match, viewer)
+	local lobbyPlayers = getLobbyPlayersForViewer(viewer)
+	local playerOneId = lobbyPlayers[1] and lobbyPlayers[1].UserId or nil
+	local playerTwoId = lobbyPlayers[2] and lobbyPlayers[2].UserId or nil
 	local currentTurn = nil
 	local winner = nil
 	local isTie = false
@@ -235,13 +341,16 @@ local function buildRoundState(match)
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
 		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
 		latestRewardByPlayerId = latestRewardByPlayerId,
-		selectedMode = selectedMode,
+		selectedMode = if viewer then matchmakingModeByPlayerId[getPlayerKey(viewer)] or selectedMode else selectedMode,
 		sessionNotice = sessionNotice,
 	}
 end
 
 local function fireRoundStateChanged()
-	RemoteEvents.RoundStateChanged:FireAllClients(buildRoundState(getPrototypeMatch()))
+	local match = getPrototypeMatch()
+	for _, player in ipairs(Players:GetPlayers()) do
+		RemoteEvents.RoundStateChanged:FireClient(player, buildRoundState(match, player))
+	end
 end
 
 local function awardRoundRewards(match)
@@ -269,9 +378,10 @@ local function awardRoundRewards(match)
 	LeaderboardService.recordRound(match.players, match.winner, isTieRound)
 end
 
-local function buildLobbyState()
-	local playerOneId = prototypePlayers[1] and prototypePlayers[1].UserId or nil
-	local playerTwoId = prototypePlayers[2] and prototypePlayers[2].UserId or nil
+local function buildLobbyState(viewer)
+	local lobbyPlayers = getLobbyPlayersForViewer(viewer)
+	local playerOneId = lobbyPlayers[1] and lobbyPlayers[1].UserId or nil
+	local playerTwoId = lobbyPlayers[2] and lobbyPlayers[2].UserId or nil
 	local currencyBalanceByPlayerId = {}
 
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -289,13 +399,15 @@ local function buildLobbyState()
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
 		currencyBalanceByPlayerId = currencyBalanceByPlayerId,
 		latestRewardByPlayerId = latestRewardByPlayerId,
-		selectedMode = selectedMode,
+		selectedMode = if viewer then matchmakingModeByPlayerId[getPlayerKey(viewer)] or selectedMode else selectedMode,
 		sessionNotice = sessionNotice,
 	}
 end
 
 local function fireLobbyStateChanged()
-	RemoteEvents.LobbyStateChanged:FireAllClients(buildLobbyState())
+	for _, player in ipairs(Players:GetPlayers()) do
+		RemoteEvents.LobbyStateChanged:FireClient(player, buildLobbyState(player))
+	end
 end
 
 local function requestSecretsForPrototypePlayers(playerOne, playerTwo)
@@ -341,22 +453,28 @@ local function createPrototypeMatch()
 	end
 
 	prototypeMatchId = prototypeMatch.id
+	removePlayerFromModeQueues(playerOne)
+	removePlayerFromModeQueues(playerTwo)
 	lobbyReadyByPlayerId = {}
 	rematchReadyByPlayerId = {}
 	latestRewardByPlayerId = {}
 	sessionNotice = nil
 	setPrototypePlayersLobbyState(LOBBY_STATES.InRound)
 	setGameState(GAME_STATES.WaitingForSecrets)
-	print("[FastGuesser] match created", prototypeMatchId, playerOne.UserId, playerTwo.UserId)
+	print("[FastGuesser] match created", prototypeMatchId, playerOne.UserId, playerTwo.UserId, selectedMode)
 
 	fireRoundStateChanged()
 	fireLobbyStateChanged()
 	requestSecretsForPrototypePlayers(playerOne, playerTwo)
 end
 
-local function tryStartPrototypeMatch()
+local function tryStartPrototypeMatch(modeId)
 	if prototypeMatchId then
 		return
+	end
+
+	if modeId then
+		setPrototypePlayersForMode(modeId)
 	end
 
 	if #prototypePlayers < 2 then
@@ -508,13 +626,6 @@ local function selectModeForPrompt(player, modeId)
 		return nil
 	end
 
-	if currentGameState == GAME_STATES.WaitingForPlayers and not prototypeMatchId then
-		selectedMode = mode.id
-		fireModeStateChanged(mode.name .. " selected.")
-		fireLobbyStateChanged()
-		fireRoundStateChanged()
-	end
-
 	return mode
 end
 
@@ -525,8 +636,10 @@ local function onPlayModePromptRequested(player, modeId)
 	end
 
 	print("[FastGuesser] play mode prompt", player.UserId, mode.id)
+	matchmakingModeByPlayerId[getPlayerKey(player)] = mode.id
 	menuByPlayerId[getPlayerKey(player)] = true
 	sessionNotice = nil
+	RemoteEvents.ModeStateChanged:FireClient(player, buildModeStateForMode(mode.id, mode.name .. " selected."))
 	RemoteEvents.LobbyFlowStateChanged:FireClient(player, {
 		lobbyState = LOBBY_STATES.InLobby,
 		showMenu = true,
@@ -539,6 +652,8 @@ local function onLobbyEntered(player)
 	menuByPlayerId[getPlayerKey(player)] = nil
 	sessionNotice = nil
 	setPlayerLobbyState(player, LOBBY_STATES.Matchmaking)
+	local requestedMode = matchmakingModeByPlayerId[getPlayerKey(player)] or selectedMode
+	addPlayerToModeQueue(player, requestedMode)
 
 	if currentGameState == GAME_STATES.RoundOver or currentGameState == GAME_STATES.WaitingForRematch then
 		onRestartRequested(player)
@@ -551,12 +666,8 @@ local function onLobbyEntered(player)
 		return
 	end
 
-	if not isPrototypePlayer(player) and #prototypePlayers < 2 then
-		table.insert(prototypePlayers, player)
-	end
-
 	setGameState(GAME_STATES.WaitingForPlayers)
-	tryStartPrototypeMatch()
+	tryStartPrototypeMatch(requestedMode)
 end
 
 local function onLobbyLeft(player)
@@ -565,6 +676,7 @@ local function onLobbyLeft(player)
 	rematchReadyByPlayerId[getPlayerKey(player)] = nil
 	sessionNotice = nil
 	setPlayerLobbyState(player, LOBBY_STATES.InLobby)
+	local playerMode = matchmakingModeByPlayerId[getPlayerKey(player)]
 
 	if currentGameState == GAME_STATES.RoundOver or currentGameState == GAME_STATES.WaitingForRematch then
 		removePrototypePlayer(player)
@@ -583,22 +695,23 @@ local function onLobbyLeft(player)
 	end
 
 	removePrototypePlayer(player)
-	lobbyReadyByPlayerId = {}
-	rematchReadyByPlayerId = {}
+	if playerMode and not prototypeMatchId then
+		setPrototypePlayersForMode(playerMode)
+	end
 	sessionNotice = "Waiting for another player"
 	fireLobbyStateChanged()
 	fireRoundStateChanged()
 end
 
 local function onReadyChanged(player, isReady)
-	if prototypeMatchId or not isPrototypePlayer(player) then
+	if prototypeMatchId or (not isPrototypePlayer(player) and not isQueuedPlayer(player)) then
 		return
 	end
 
 	sessionNotice = nil
 	lobbyReadyByPlayerId[getPlayerKey(player)] = isReady == true or nil
 	setGameState(GAME_STATES.WaitingForPlayers)
-	tryStartPrototypeMatch()
+	tryStartPrototypeMatch(matchmakingModeByPlayerId[getPlayerKey(player)] or selectedMode)
 end
 
 local function onSecretSubmitted(player, secret)
