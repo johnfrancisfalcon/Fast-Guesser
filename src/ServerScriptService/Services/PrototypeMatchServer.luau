@@ -306,6 +306,7 @@ local function buildRoundState(match, viewer)
 	local isTie = false
 	local lockedPositionsByPlayerId = {}
 	local secretSubmittedByPlayerId = {}
+	local finalSecretsByPlayerId = {}
 	local currencyBalanceByPlayerId = {}
 
 	if match then
@@ -320,6 +321,11 @@ local function buildRoundState(match, viewer)
 		lockedPositionsByPlayerId[tostring(playerTwoId)] = match.lockedPositions[playerTwoId]
 		secretSubmittedByPlayerId[tostring(playerOneId)] = match.secrets[playerOneId] ~= nil
 		secretSubmittedByPlayerId[tostring(playerTwoId)] = match.secrets[playerTwoId] ~= nil
+
+		if match.winner then
+			finalSecretsByPlayerId[tostring(playerOneId)] = match.secrets[playerOneId]
+			finalSecretsByPlayerId[tostring(playerTwoId)] = match.secrets[playerTwoId]
+		end
 	end
 
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -337,6 +343,7 @@ local function buildRoundState(match, viewer)
 		lobbyStateByPlayerId = lobbyStateByPlayerId,
 		lockedPositionsByPlayerId = lockedPositionsByPlayerId,
 		secretSubmittedByPlayerId = secretSubmittedByPlayerId,
+		finalSecretsByPlayerId = finalSecretsByPlayerId,
 		lobbyReadyByPlayerId = lobbyReadyByPlayerId,
 		rematchReadyByPlayerId = rematchReadyByPlayerId,
 		currencyBalanceByPlayerId = currencyBalanceByPlayerId,

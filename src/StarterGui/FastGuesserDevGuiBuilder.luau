@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 19
+local UI_VERSION = 20
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -687,13 +687,13 @@ local function createResultScreen(parent)
 	local shell = createCenteredShell(
 		screen,
 		"ResultShell",
-		UDim2.new(0.64, 0, 0.64, 0),
-		Vector2.new(700, 500),
-		Vector2.new(900, 620)
+		UDim2.new(0.64, 0, 0.7, 0),
+		Vector2.new(700, 560),
+		Vector2.new(900, 700)
 	)
 	createHeader(shell, "Round complete.")
 
-	local panel = createCard(shell, "ResultPanel", UDim2.new(1, -84, 0, 304), UDim2.fromOffset(42, 176), COLORS.panelStrong)
+	local panel = createCard(shell, "ResultPanel", UDim2.new(1, -84, 0, 380), UDim2.fromOffset(42, 176), COLORS.panelStrong)
 	addPadding(panel, 28, 24, 28, 28)
 	createSectionTitle(panel, "Replay", 0, 0, 140)
 	local title = createLabel(panel, "ResultTitleLabel", "Game over", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 48), 32)
@@ -704,9 +704,18 @@ local function createResultScreen(parent)
 	winner.Font = Enum.Font.GothamBold
 	local subtitle = createLabel(panel, "ResultSubtitleLabel", "Round complete.", UDim2.new(1, -32, 0, 22), UDim2.fromOffset(16, 148), 15, COLORS.mutedText)
 	subtitle.Font = Enum.Font.GothamBold
-	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 196), 18, COLORS.mutedText)
+
+	local secretsCard = createCard(panel, "ResultSecretsCard", UDim2.new(1, 0, 0, 76), UDim2.fromOffset(0, 196), COLORS.panelAlt, 16)
+	addPadding(secretsCard, 18, 12, 18, 12)
+	local yourSecret = createLabel(secretsCard, "ResultYourSecretLabel", "Your secret: -", UDim2.new(0.5, -12, 0, 46), UDim2.fromOffset(0, 2), 18, COLORS.text)
+	yourSecret.Font = Enum.Font.GothamBold
+	local opponentSecret = createLabel(secretsCard, "ResultOpponentSecretLabel", "Opponent secret: -", UDim2.new(0.5, -12, 0, 46), UDim2.new(0.5, 12, 0, 2), 18, COLORS.text)
+	opponentSecret.Font = Enum.Font.GothamBold
+	opponentSecret.TextXAlignment = Enum.TextXAlignment.Right
+
+	local resultStatusLabel = createLabel(panel, "ResultStatusLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 290), 18, COLORS.mutedText)
 	resultStatusLabel.TextYAlignment = Enum.TextYAlignment.Top
-	local rewardLabel = createLabel(panel, "ResultRewardLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 224), 18, COLORS.coin)
+	local rewardLabel = createLabel(panel, "ResultRewardLabel", "", UDim2.new(1, 0, 0, 26), UDim2.fromOffset(0, 318), 18, COLORS.coin)
 	rewardLabel.Font = Enum.Font.GothamBlack
 	local playAgain = createButton(panel, "ResultPlayAgainButton", "Play Again", UDim2.new(0.5, -10, 0, 50), UDim2.new(0, 0, 1, -18), "Primary")
 	playAgain.AnchorPoint = Vector2.new(0, 1)
@@ -965,6 +974,8 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("CurrencyHud", true)
 		and gui:FindFirstChild("BuyCoinsHudButton", true)
 		and gui:FindFirstChild("ResultRewardLabel", true)
+		and gui:FindFirstChild("ResultYourSecretLabel", true)
+		and gui:FindFirstChild("ResultOpponentSecretLabel", true)
 		and gui:FindFirstChild("ShopPanel", true)
 		and gui:FindFirstChild("CoinPacksPanel", true)
 		and gui:FindFirstChild("OpenCoinPacksButton", true)

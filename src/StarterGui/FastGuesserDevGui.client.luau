@@ -171,12 +171,22 @@ local leaderboardStatusLabel = findUi(leaderboardPanel, "LeaderboardStatusLabel"
 local leaderboardEmptyLabel = findUi(leaderboardPanel, "LeaderboardEmptyLabel")
 
 local modeUi = {
+	menuSubtitleLabel = findUi(menuScreen, "SubtitleLabel"),
+	menuTagLabel = findUi(menuScreen, "MenuTagLabel"),
+	menuHeadingLabel = findUi(menuScreen, "MenuHeadingLabel"),
+	menuBodyLabel = findUi(menuScreen, "MenuBodyLabel"),
+	menuInfoTextLabel = findUi(menuScreen, "MenuInfoTextLabel"),
+	menuInfoFootnoteLabel = findUi(menuScreen, "MenuInfoFootnoteLabel"),
+	howToPlayTextLabel = findUi(menuScreen, "HowToPlayTextLabel"),
+	matchSubtitleLabel = findUi(matchScreen, "SubtitleLabel"),
 	secretHelpLabel = findUi(matchScreen, "SecretHelpLabel"),
 	guessHelpLabel = findUi(matchScreen, "GuessHelpLabel"),
 	yourLockedCard = findUi(matchScreen, "YourLockedCard"),
 	opponentLockedCard = findUi(matchScreen, "OpponentLockedCard"),
 	highLowSummaryLabel = findUi(matchScreen, "HighLowSummaryLabel"),
 	historyHintLabel = findUi(matchScreen, "HistoryHintLabel"),
+	resultYourSecretLabel = findUi(resultScreen, "ResultYourSecretLabel"),
+	resultOpponentSecretLabel = findUi(resultScreen, "ResultOpponentSecretLabel"),
 	closeModesButton = findUi(modesPanel, "CloseModesButton"),
 	modesStatusLabel = findUi(modesPanel, "ModesStatusLabel"),
 	buyCoinsHudButton = findUi(currencyHud, "BuyCoinsHudButton"),
@@ -252,6 +262,68 @@ end
 
 local function getModeInputError()
 	return if isHigherLowerMode() then "Enter a number from 1 to 100." else "Enter exactly 4 digits."
+end
+
+local function getModeCopy()
+	if isHigherLowerMode() then
+		return {
+			menuSubtitle = "Pick a number, read Higher / Lower feedback, and solve first.",
+			menuTag = "1-100 NUMBER DUEL",
+			menuHeading = "Narrow the range. Call the number.",
+			menuBody = "Set a secret number from 1 to 100, trade guesses, and use Higher, Lower, or Correct feedback to solve first.",
+			menuInfo = "Both players submit a secret number from 1 to 100. On each turn, guess the opponent's number. Feedback tells you whether the answer is Higher, Lower, or Correct.",
+			menuFootnote = "If the first player solves first, the second player still gets one final chance to tie.",
+			howToPlay = "Choose a secret number from 1 to 100. When the round starts, take turns guessing the opponent's number. Feedback is only Higher, Lower, or Correct. The first player to guess correctly wins, with a final tie chance for the second player if needed.",
+			matchSubtitle = "Race to find the hidden number. Feedback tells you Higher, Lower, or Correct.",
+			secretHelp = "Choose the 1-100 number your opponent is trying to find.",
+			guessHelp = "Submit guesses from 1 to 100. Feedback says whether the answer is Higher, Lower, or Correct.",
+			historyHint = "Each entry shows the guess and whether the answer is Higher, Lower, or Correct.",
+			secretPlaceholder = "Enter 1-100",
+			guessPlaceholder = "Enter 1-100",
+			enterSecretStatus = "Enter your secret number",
+			waitingSecretStatus = "Waiting for opponent number",
+			secretActiveState = "Active: enter your number",
+			secretSavedState = "Number saved",
+			guessLockedState = "Locked until numbers are in",
+			guessWaitingState = "Waiting for guess phase",
+			secretLockedState = "Number locked",
+			guessActiveState = "Active: submit a number",
+			guessOpponentState = "Opponent is guessing",
+			youWonSubtitle = "You found the number and closed the round.",
+			opponentWonSubtitle = "Opponent found your number first.",
+			tieSubtitle = "Both players found the number on the final exchange.",
+			highLowSummary = "No locked digits in this mode. Use Higher / Lower history to narrow the hidden number.",
+		}
+	end
+
+	return {
+		menuSubtitle = "Lock exact digits before your opponent cracks your code.",
+		menuTag = "2-PLAYER SHOWDOWN",
+		menuHeading = "Read the pattern. Win the race.",
+		menuBody = "Set a 4-digit secret, trade guesses, and lock exact hits before the other player solves your full code.",
+		menuInfo = "Both players submit a secret. On each turn, enter a 4-digit guess. Exact-position matches lock in and stay visible for the rest of the round.",
+		menuFootnote = "If the first player solves first, the second player still gets one final chance to tie.",
+		howToPlay = "Choose a 4-digit secret. When the round starts, take turns making 4-digit guesses. Each exact-position match becomes locked, helping narrow the answer. The player who fully reveals the opponent's code wins, with a final tie chance for the second player if needed.",
+		matchSubtitle = "Race to solve the code. Locked digits stay revealed for the rest of the round.",
+		secretHelp = "Choose the 4-digit code your opponent is trying to reveal.",
+		guessHelp = "Submit guesses on your turn. Exact digits lock permanently into place.",
+		historyHint = "Each entry shows the guess and currently locked feedback.",
+		secretPlaceholder = "Enter 4 digits",
+		guessPlaceholder = "Enter 4 digits",
+		enterSecretStatus = "Enter your secret",
+		waitingSecretStatus = "Waiting for opponent secret",
+		secretActiveState = "Active: enter your code",
+		secretSavedState = "Secret saved",
+		guessLockedState = "Locked until secrets are in",
+		guessWaitingState = "Waiting for guess phase",
+		secretLockedState = "Secret locked",
+		guessActiveState = "Active: submit a guess",
+		guessOpponentState = "Opponent is guessing",
+		youWonSubtitle = "You cracked the code and closed the round.",
+		opponentWonSubtitle = "Opponent solved your code first.",
+		tieSubtitle = "Both players solved it on the final exchange.",
+		highLowSummary = "",
+	}
 end
 
 local function clampModeInput(value)
@@ -754,24 +826,30 @@ end
 
 local function setMatchPresentationForMode()
 	local higherLower = isHigherLowerMode()
+	local copy = getModeCopy()
 
-	modeUi.secretHelpLabel.Text = if higherLower
-		then "Choose the 1-100 number your opponent is trying to find."
-		else "Choose the 4-digit code your opponent is trying to reveal."
-	modeUi.guessHelpLabel.Text = if higherLower
-		then "Submit guesses from 1 to 100. Feedback says whether the answer is higher, lower, or correct."
-		else "Submit guesses on your turn. Exact digits lock permanently into place."
-	secretTextBox.PlaceholderText = if higherLower then "Enter 1-100" else "Enter 4 digits"
-	guessTextBox.PlaceholderText = if higherLower then "Enter 1-100" else "Enter 4 digits"
-	modeUi.historyHintLabel.Text = if higherLower
-		then "Each entry shows the guess and whether the answer is higher, lower, or correct."
-		else "Each entry shows the guess and currently locked feedback."
+	modeUi.matchSubtitleLabel.Text = copy.matchSubtitle
+	modeUi.secretHelpLabel.Text = copy.secretHelp
+	modeUi.guessHelpLabel.Text = copy.guessHelp
+	secretTextBox.PlaceholderText = copy.secretPlaceholder
+	guessTextBox.PlaceholderText = copy.guessPlaceholder
+	modeUi.historyHintLabel.Text = copy.historyHint
 	modeUi.yourLockedCard.Visible = not higherLower
 	modeUi.opponentLockedCard.Visible = not higherLower
 	modeUi.highLowSummaryLabel.Visible = higherLower
-	modeUi.highLowSummaryLabel.Text = if higherLower
-		then "No locked digits in this mode. Use Higher / Lower history to narrow the hidden number."
-		else ""
+	modeUi.highLowSummaryLabel.Text = copy.highLowSummary
+end
+
+local function setMenuPresentationForMode()
+	local copy = getModeCopy()
+
+	modeUi.menuSubtitleLabel.Text = copy.menuSubtitle
+	modeUi.menuTagLabel.Text = copy.menuTag
+	modeUi.menuHeadingLabel.Text = copy.menuHeading
+	modeUi.menuBodyLabel.Text = copy.menuBody
+	modeUi.menuInfoTextLabel.Text = copy.menuInfo
+	modeUi.menuInfoFootnoteLabel.Text = copy.menuFootnote
+	modeUi.howToPlayTextLabel.Text = copy.howToPlay
 end
 
 function setButtonEnabled(button, enabled)
@@ -1136,29 +1214,37 @@ local function updateResult(roundState)
 		resultSubtitleLabel.Text = "Round complete."
 		resultStatusLabel.Text = ""
 		resultRewardLabel.Text = ""
+		modeUi.resultYourSecretLabel.Text = "Your secret: -"
+		modeUi.resultOpponentSecretLabel.Text = "Opponent secret: -"
 		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 		setRestartControlsEnabled(false)
 		return
 	end
 
+	local copy = getModeCopy()
 	local winnerId = roundState.winner
 	if roundState.isTie or winnerId == TIE_WINNER then
 		resultWinnerLabel.Text = "Result: Tie"
-		resultSubtitleLabel.Text = "Both players solved it on the final exchange."
+		resultSubtitleLabel.Text = copy.tieSubtitle
 		updateCardVisual(resultWinnerCard, COLORS.resultTie, COLORS.historyEntryBorder)
 	elseif winnerId == localPlayer.UserId then
 		resultWinnerLabel.Text = "Winner: You"
-		resultSubtitleLabel.Text = "You cracked the code and closed the round."
+		resultSubtitleLabel.Text = copy.youWonSubtitle
 		updateCardVisual(resultWinnerCard, COLORS.resultWin, COLORS.readyPillBorder)
 	elseif winnerId then
 		resultWinnerLabel.Text = "Winner: Opponent"
-		resultSubtitleLabel.Text = "Opponent solved your code first."
+		resultSubtitleLabel.Text = copy.opponentWonSubtitle
 		updateCardVisual(resultWinnerCard, COLORS.resultLoss, Color3.fromRGB(208, 122, 122))
 	else
 		resultWinnerLabel.Text = "Winner: -"
 		resultSubtitleLabel.Text = "Round complete."
 		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
 	end
+
+	local finalSecretsByPlayerId = roundState.finalSecretsByPlayerId or {}
+	local opponentId = getOpponentId(roundState)
+	modeUi.resultYourSecretLabel.Text = "Your secret: " .. tostring(finalSecretsByPlayerId[tostring(localPlayer.UserId)] or "-")
+	modeUi.resultOpponentSecretLabel.Text = "Opponent secret: " .. tostring(finalSecretsByPlayerId[tostring(opponentId)] or "-")
 
 	local reward = getLocalCurrencyValue(roundState, "latestRewardByPlayerId")
 	resultRewardLabel.Text = if reward and reward > 0 then "+" .. tostring(reward) .. " coins earned" else ""
@@ -1231,35 +1317,39 @@ local function updateMatchForUiState(uiState, roundState)
 	end
 
 	if uiState == UI_STATES.EnteringSecret then
-		statusLabel.Text = "Enter your secret"
+		local copy = getModeCopy()
+		statusLabel.Text = copy.enterSecretStatus
 		turnLabel.Text = "Turn: waiting"
 		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
-		setStateLabel(secretStateLabel, "Active: enter your code", true)
-		setStateLabel(guessStateLabel, "Locked until secrets are in", false)
+		setStateLabel(secretStateLabel, copy.secretActiveState, true)
+		setStateLabel(guessStateLabel, copy.guessLockedState, false)
 		setSecretControlsEnabled(canSubmitSecret(roundState) == true)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.WaitingForOpponentSecret then
-		statusLabel.Text = "Waiting for opponent secret"
+		local copy = getModeCopy()
+		statusLabel.Text = copy.waitingSecretStatus
 		turnLabel.Text = "Turn: waiting"
 		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
-		setStateLabel(secretStateLabel, "Secret saved", false)
-		setStateLabel(guessStateLabel, "Waiting for guess phase", false)
+		setStateLabel(secretStateLabel, copy.secretSavedState, false)
+		setStateLabel(guessStateLabel, copy.guessWaitingState, false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.InTurn then
+		local copy = getModeCopy()
 		statusLabel.Text = "Your turn"
 		turnLabel.Text = "Turn: you"
 		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
-		setStateLabel(secretStateLabel, "Secret locked", false)
-		setStateLabel(guessStateLabel, "Active: submit a guess", true)
+		setStateLabel(secretStateLabel, copy.secretLockedState, false)
+		setStateLabel(guessStateLabel, copy.guessActiveState, true)
 		setSecretControlsEnabled(false)
 		refreshGuessControls()
 	elseif uiState == UI_STATES.OpponentTurn then
+		local copy = getModeCopy()
 		statusLabel.Text = "Opponent's turn"
 		turnLabel.Text = if roundState and roundState.currentTurn then "Turn: opponent" else "Turn: waiting"
 		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
-		setStateLabel(secretStateLabel, "Secret locked", false)
-		setStateLabel(guessStateLabel, "Opponent is guessing", false)
+		setStateLabel(secretStateLabel, copy.secretLockedState, false)
+		setStateLabel(guessStateLabel, copy.guessOpponentState, false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	end
@@ -1273,6 +1363,7 @@ local function renderUi()
 		howToPlayPanel.Visible = false
 		resetRoundUi()
 	elseif currentUiState == UI_STATES.Menu then
+		setMenuPresentationForMode()
 		setRestartControlsEnabled(false)
 		updateLobby(latestLobbyState)
 	elseif currentUiState == UI_STATES.ReadyUp then
@@ -1466,6 +1557,7 @@ local function onModeStateChanged(modeState)
 	updateModesPanel(modeState)
 	secretTextBox.Text = clampModeInput(secretTextBox.Text)
 	guessTextBox.Text = clampModeInput(guessTextBox.Text)
+	setMenuPresentationForMode()
 	setMatchPresentationForMode()
 	clearValidationMessages()
 end
