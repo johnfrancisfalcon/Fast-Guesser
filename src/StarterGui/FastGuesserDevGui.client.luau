@@ -29,7 +29,7 @@ local MODES = {
 }
 
 local UI_STATES = {
-	-- No modal UI; the player is standing in the 3D lobby and can use the Play Match prompt.
+	-- No modal UI; the player is standing in the 3D lobby and can use a game pad prompt.
 	LobbyWorld = "lobby_world",
 	Menu = "menu",
 	ReadyUp = "ready_up",
@@ -1558,10 +1558,11 @@ local function onLobbyPromptTriggered(prompt)
 		return
 	end
 
-	if prompt.Name == "PlayMatchPrompt" then
+	local modeId = prompt:GetAttribute("ModeId")
+	if modeId then
 		setCommercePanelsVisible(false, false, false, false, false)
 		howToPlayPanel.Visible = false
-		setUiState(UI_STATES.Menu)
+		RemoteEvents.PlayModeRequested:FireServer(modeId)
 	elseif prompt.Name == "ShopPrompt" then
 		howToPlayPanel.Visible = false
 		RemoteEvents.ShopOpenRequested:FireServer()
@@ -1571,9 +1572,6 @@ local function onLobbyPromptTriggered(prompt)
 	elseif prompt.Name == "LeaderboardPrompt" then
 		howToPlayPanel.Visible = false
 		RemoteEvents.LeaderboardOpenRequested:FireServer()
-	elseif prompt.Name == "ModesPrompt" then
-		howToPlayPanel.Visible = false
-		RemoteEvents.ModesOpenRequested:FireServer()
 	end
 end
 

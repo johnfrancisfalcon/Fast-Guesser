@@ -468,11 +468,6 @@ local function onLeaderboardPromptRequested(player)
 	LeaderboardService.openLeaderboard(player)
 end
 
-local function onModesPromptRequested(player)
-	print("[FastGuesser] modes prompt", player.UserId)
-	RemoteEvents.ModesOpened:FireClient(player, buildModeState())
-end
-
 local function onModeSelectRequested(player, modeId)
 	local mode = getModeById(modeId)
 	if not mode then
@@ -496,8 +491,40 @@ local function onModeSelectRequested(player, modeId)
 	fireRoundStateChanged()
 end
 
-local function onPlayMatchPromptRequested(player)
-	print("[FastGuesser] play match prompt", player.UserId)
+local function selectModeForPrompt(player, modeId)
+	local mode = getModeById(modeId)
+	if not mode then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("That mode is not available."))
+		return nil
+	end
+
+	if not mode.enabled then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState(mode.name .. " is coming soon."))
+		return nil
+	end
+
+	if currentGameState ~= GAME_STATES.WaitingForPlayers or prototypeMatchId then
+		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("Mode selection is locked while a round is active."))
+		return nil
+	end
+
+	if currentGameState == GAME_STATES.WaitingForPlayers and not prototypeMatchId then
+		selectedMode = mode.id
+		fireModeStateChanged(mode.name .. " selected.")
+		fireLobbyStateChanged()
+		fireRoundStateChanged()
+	end
+
+	return mode
+end
+
+local function onPlayModePromptRequested(player, modeId)
+	local mode = selectModeForPrompt(player, modeId or MODES.Classic4Digit)
+	if not mode then
+		return
+	end
+
+	print("[FastGuesser] play mode prompt", player.UserId, mode.id)
 	menuByPlayerId[getPlayerKey(player)] = true
 	sessionNotice = nil
 	RemoteEvents.LobbyFlowStateChanged:FireClient(player, {
@@ -680,11 +707,10 @@ function PrototypeMatchServer.start()
 		warn("[FastGuesser] Monetization disabled for this session:", monetizationResult)
 	end
 	LobbyWorldService.createLobby(
-		onPlayMatchPromptRequested,
+		onPlayModePromptRequested,
 		onShopPromptRequested,
 		onRewardsPromptRequested,
-		onLeaderboardPromptRequested,
-		onModesPromptRequested
+		onLeaderboardPromptRequested
 	)
 
 	Players.PlayerAdded:Connect(detectPlayer)
@@ -702,6 +728,7 @@ function PrototypeMatchServer.start()
 	RemoteEvents.ReadyChanged.OnServerEvent:Connect(onReadyChanged)
 	RemoteEvents.RematchRequested.OnServerEvent:Connect(onRestartRequested)
 	RemoteEvents.RestartRequested.OnServerEvent:Connect(onRestartRequested)
+	RemoteEvents.PlayModeRequested.OnServerEvent:Connect(onPlayModePromptRequested)
 	RemoteEvents.ShopPurchaseRequested.OnServerEvent:Connect(function(player, itemId)
 		EconomyService.purchaseItem(player, itemId)
 	end)
@@ -711,7 +738,6 @@ function PrototypeMatchServer.start()
 	RemoteEvents.ShopOpenRequested.OnServerEvent:Connect(onShopPromptRequested)
 	RemoteEvents.RewardsOpenRequested.OnServerEvent:Connect(onRewardsPromptRequested)
 	RemoteEvents.LeaderboardOpenRequested.OnServerEvent:Connect(onLeaderboardPromptRequested)
-	RemoteEvents.ModesOpenRequested.OnServerEvent:Connect(onModesPromptRequested)
 	RemoteEvents.CoinPacksOpenRequested.OnServerEvent:Connect(function(player)
 		if monetizationService then
 			monetizationService.openCoinPacks(player)

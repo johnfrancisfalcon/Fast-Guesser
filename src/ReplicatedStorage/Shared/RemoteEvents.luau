@@ -66,6 +66,9 @@ return {
 	-- Server -> client. Payload: player lobby shell state.
 	LobbyFlowStateChanged = getOrCreateRemoteEvent("LobbyFlowStateChanged"),
 
+	-- Client -> server. Payload: mode id string; opens the match flow for that game pad.
+	PlayModeRequested = getOrCreateRemoteEvent("PlayModeRequested"),
+
 	-- Server -> client. Payload: current soft-currency balance and optional delta.
 	CurrencyChanged = getOrCreateRemoteEvent("CurrencyChanged"),
 

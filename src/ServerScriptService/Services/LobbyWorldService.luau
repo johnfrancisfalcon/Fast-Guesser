@@ -17,6 +17,11 @@ local COLORS = {
 	text = Color3.fromRGB(245, 247, 250),
 }
 
+local MODES = {
+	Classic4Digit = "classic_4_digit",
+	HigherLower100 = "higher_lower_100",
+}
+
 local function createPart(parent, name, size, position, color, material)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -125,28 +130,58 @@ local function createStation(parent, name, basePosition, accentColor, titleText,
 	return base, backWall, counter
 end
 
-local function createPlayPortal(parent, onPlayMatchRequested)
-	local base = createPart(parent, "PlayMatchPad", Vector3.new(20, 1, 13), Vector3.new(0, 0.05, -16), COLORS.platform)
-	createPart(parent, "PlayMatchGlowPad", Vector3.new(15, 0.18, 8), Vector3.new(0, 0.65, -15.6), COLORS.accent, Enum.Material.Neon)
-	createPart(parent, "PlayMatchEntryLine", Vector3.new(15, 0.35, 1), Vector3.new(0, 0.82, -9.8), COLORS.accent, Enum.Material.Neon)
+local function createGamePad(parent, name, modeId, centerPosition, accentColor, titleText, subtitleText, onPlayModeRequested)
+	local base = createPart(parent, name .. "Pad", Vector3.new(16, 1, 12), centerPosition, COLORS.platform)
+	createPart(parent, name .. "GlowPad", Vector3.new(11.5, 0.18, 7), centerPosition + Vector3.new(0, 0.6, 0.25), accentColor, Enum.Material.Neon)
+	createPart(parent, name .. "EntryLine", Vector3.new(11.5, 0.35, 0.75), centerPosition + Vector3.new(0, 0.82, 5.45), accentColor, Enum.Material.Neon)
+	createPart(parent, name .. "LeftMarker", Vector3.new(0.8, 4.8, 0.8), centerPosition + Vector3.new(-6.6, 2.4, -4.7), accentColor, Enum.Material.Neon)
+	createPart(parent, name .. "RightMarker", Vector3.new(0.8, 4.8, 0.8), centerPosition + Vector3.new(6.6, 2.4, -4.7), accentColor, Enum.Material.Neon)
 
-	local leftPillar = createPart(parent, "PlayPortalLeftPillar", Vector3.new(2, 9, 2), Vector3.new(-6, 4.5, -21), COLORS.accent, Enum.Material.Neon)
-	local rightPillar = createPart(parent, "PlayPortalRightPillar", Vector3.new(2, 9, 2), Vector3.new(6, 4.5, -21), COLORS.accent, Enum.Material.Neon)
-	createPart(parent, "PlayPortalHeader", Vector3.new(14, 2, 2), Vector3.new(0, 8.5, -21), COLORS.accent, Enum.Material.Neon)
-	local promptStand = createPart(parent, "PlayMatchStand", Vector3.new(5, 3.5, 1.4), Vector3.new(0, 2.35, -18.5), COLORS.platformDark)
-	createBillboard(parent, promptStand, "PlayMatchSign", "Play Match", "Step in and open the match menu", COLORS.accent)
+	local promptStand = createPart(parent, name .. "Stand", Vector3.new(6.5, 3.4, 1.4), centerPosition + Vector3.new(0, 2.25, -3.2), COLORS.platformDark)
+	createBillboard(parent, promptStand, name .. "Sign", titleText, subtitleText, accentColor)
 
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "PlayMatchPrompt"
-	prompt.ActionText = "Play Match"
-	prompt.ObjectText = "Fast Guesser"
+	prompt.Name = name .. "Prompt"
+	prompt.ActionText = "Play"
+	prompt.ObjectText = titleText
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 13
 	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("ModeId", modeId)
 	prompt.Parent = promptStand
-	prompt.Triggered:Connect(onPlayMatchRequested)
+	prompt.Triggered:Connect(function(player)
+		onPlayModeRequested(player, modeId)
+	end)
 
-	return base, leftPillar, rightPillar
+	return base
+end
+
+local function createGameArea(parent, onPlayModeRequested)
+	local sectionBase = createPart(parent, "GameAreaBase", Vector3.new(39, 0.8, 18), Vector3.new(11, 0, -23.5), COLORS.platformDark)
+	createPart(parent, "GameAreaHeader", Vector3.new(30, 1.1, 1), Vector3.new(11, 5.9, -32.2), COLORS.accent, Enum.Material.Neon)
+	createPart(parent, "GameAreaBackRail", Vector3.new(39, 3.6, 1), Vector3.new(11, 1.8, -32.8), COLORS.platformDark)
+	createBillboard(parent, sectionBase, "GameAreaSign", "Game Area", "Choose a mode, then ready up", COLORS.accent)
+
+	createGamePad(
+		parent,
+		"Classic4DigitPlay",
+		MODES.Classic4Digit,
+		Vector3.new(1, 0.25, -22.4),
+		COLORS.accent,
+		"Classic 4-Digit",
+		"Exact-position code duel",
+		onPlayModeRequested
+	)
+	createGamePad(
+		parent,
+		"HigherLower100Play",
+		MODES.HigherLower100,
+		Vector3.new(21, 0.25, -22.4),
+		COLORS.warning,
+		"1-100 Higher/Lower",
+		"Higher, lower, correct",
+		onPlayModeRequested
+	)
 end
 
 local function createRewardWheel(parent, onRewardsRequested)
@@ -176,7 +211,7 @@ local function createRewardWheel(parent, onRewardsRequested)
 	wall:SetAttribute("FutureFeature", "Rewards")
 end
 
-function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, onRewardsRequested, onLeaderboardRequested, onModesRequested)
+function LobbyWorldService.createLobby(onPlayModeRequested, onShopRequested, onRewardsRequested, onLeaderboardRequested)
 	local existingLobby = Workspace:FindFirstChild(LOBBY_MODEL_NAME)
 	if existingLobby then
 		existingLobby:Destroy()
@@ -191,7 +226,7 @@ function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, on
 	createPart(model, "SpawnGlowRing", Vector3.new(14, 0.18, 14), Vector3.new(0, 0.04, 18), COLORS.accent, Enum.Material.Neon)
 	createPart(model, "LobbyIdentityHeader", Vector3.new(30, 1.2, 1), Vector3.new(0, 6.2, 31), COLORS.accent, Enum.Material.Neon)
 	createSpawn(model)
-	createPlayPortal(model, onPlayMatchRequested)
+	createGameArea(model, onPlayModeRequested)
 
 	createStation(model, "ShopStation", Vector3.new(-21, 0.05, 6), COLORS.shop, "Shop", "Coin cosmetics", {
 		name = "ShopPrompt",
@@ -204,16 +239,11 @@ function LobbyWorldService.createLobby(onPlayMatchRequested, onShopRequested, on
 		actionText = "Open Leaderboard",
 		callback = onLeaderboardRequested,
 	})
-	createStation(model, "ModeStation", Vector3.new(21, 0.05, -22), COLORS.warning, "Modes", "Choose rulesets", {
-		name = "ModesPrompt",
-		actionText = "Open Modes",
-		callback = onModesRequested,
-	})
 
 	createPart(model, "ShopPathLight", Vector3.new(10, 0.18, 1), Vector3.new(-21, 0.18, 13), COLORS.shop, Enum.Material.Neon)
 	createPart(model, "RewardsPathLight", Vector3.new(10, 0.18, 1), Vector3.new(21, 0.18, 13), COLORS.reward, Enum.Material.Neon)
 	createPart(model, "LeaderboardPathLight", Vector3.new(10, 0.18, 1), Vector3.new(-21, 0.18, -14), COLORS.success, Enum.Material.Neon)
-	createPart(model, "ModePathLight", Vector3.new(10, 0.18, 1), Vector3.new(21, 0.18, -14), COLORS.warning, Enum.Material.Neon)
+	createPart(model, "GameAreaPathLight", Vector3.new(24, 0.18, 1), Vector3.new(11, 0.18, -13.5), COLORS.accent, Enum.Material.Neon)
 	createPart(model, "LobbyBackRail", Vector3.new(66, 3, 1), Vector3.new(0, 1.5, -36), COLORS.platformDark)
 	createPart(model, "LeftGuideRail", Vector3.new(1, 2, 62), Vector3.new(-36, 1, 0), COLORS.platformDark)
 	createPart(model, "RightGuideRail", Vector3.new(1, 2, 62), Vector3.new(36, 1, 0), COLORS.platformDark)
