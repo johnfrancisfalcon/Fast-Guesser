@@ -83,7 +83,6 @@ The current experience is still built around a single live two-player round mana
 - rewards modal
 - leaderboard modal
 - coin pack modal
-- hidden-but-built modes modal
 
 ## Current Lobby Features
 
@@ -148,7 +147,7 @@ Leaderboard stats are also persisted separately:
 
 ### Robux purchases
 
-A Developer Product purchase flow exists in code, but all product IDs are currently `0`, so real Robux coin purchases are not configured yet.
+A Developer Product purchase flow exists in code and reads coin pack IDs from [`src/ServerScriptService/Config/MonetizationConfig.luau`](src/ServerScriptService/Config/MonetizationConfig.luau). Product IDs are still `0` by default, so real Robux coin purchases become live only after the dashboard IDs are filled in.
 
 ## Current Project Structure
 
@@ -170,6 +169,8 @@ src/
       RemoteEvents.luau
   ServerScriptService/
     ServerBootstrap.server.luau
+    Config/
+      MonetizationConfig.luau
     Services/
       EconomyService.luau
       GuessValidator.luau
@@ -215,7 +216,10 @@ src/
   - procedural lobby construction and station prompts
 
 - [`MonetizationService.luau`](src/ServerScriptService/Services/MonetizationService.luau)
-  - Developer Product scaffolding for coin packs
+  - Developer Product coin pack flow and receipt processing
+
+- [`MonetizationConfig.luau`](src/ServerScriptService/Config/MonetizationConfig.luau)
+  - server-side Developer Product ID config points and coin pack definitions
 
 ### Shared
 
@@ -318,16 +322,18 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 - 1-100 higher/lower mode
 - ready-up and matchmaking queue by mode
 - round rewards
+- DataStore-backed daily reward claim
 - replay/rematch flow
 - DataStore-backed progression
 - DataStore-backed wins/streak leaderboard
 - shop ownership and equip state
 - visible cosmetic application for several items
+- Developer Product coin pack config and receipt flow
 
 ### Implemented but still rough
 
-- coin pack purchase UI and receipt processing scaffold
-- modes modal UI
+- coin pack purchase UI until real Developer Product IDs are configured
+- reward wheel foundation / segment presentation
 - smoke-test scripts
 - generated lobby presentation
 
@@ -345,8 +351,7 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 ### High-priority gaps
 
 - Robux coin packs are not live because product IDs are unset.
-- The rewards wheel is visual scaffolding only.
-- The modes modal exists in UI/remotes but has no active open path from the current lobby flow.
+- The rewards wheel has server-owned segment data but no spin action yet.
 - Testing is mostly manual in Studio.
 
 ### Structural limitations
@@ -366,14 +371,13 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 ## Suggested Next Development Priorities
 
 1. Rename/refactor `PrototypeMatchServer` into a clearer game session service and split matchmaking, round orchestration, and remote wiring.
-2. Finish monetization wiring by adding real Developer Product IDs and validating receipt flow in Studio/live test.
-3. Decide whether the hidden `Modes` modal still matters; either wire it into the lobby or remove the dead path/remotes.
-4. Convert the rewards wheel from decorative UI/world art into a real reward system or simplify the station to match current behavior.
-5. Break up `FastGuesserDevGui.client.luau` into smaller controller modules for lobby, match, results, shop, rewards, and cosmetics.
-6. Add better automated tests around `MatchService`, `EconomyService`, and replay edge cases.
-7. Expand the cosmetic catalog and make shop descriptions match actual visible behavior.
-8. Improve lobby art/polish now that the core loop is playable.
+2. Fill real Developer Product IDs and validate the purchase flow in Studio/live test.
+3. Convert the rewards wheel foundation into a real spin action, or simplify the world station if daily rewards remain the only reward loop.
+4. Break up `FastGuesserDevGui.client.luau` into smaller controller modules for lobby, match, results, shop, rewards, and cosmetics.
+5. Add better automated tests around `MatchService`, `EconomyService`, and replay edge cases.
+6. Expand the cosmetic catalog and make shop descriptions match actual visible behavior.
+7. Improve lobby art/polish now that the core loop is playable.
 
 ## Repository Reality Check
 
-This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are monetization completion, reward-wheel completion, codebase cleanup, and polish.
+This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are real product ID configuration/testing, reward-wheel completion, codebase cleanup, and polish.

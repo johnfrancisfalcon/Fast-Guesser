@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 22
+local UI_VERSION = 23
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -920,45 +920,6 @@ local function createLeaderboardPanel(parent)
 	setTreeZIndex(shell, 32)
 end
 
-local function createModesPanel(parent)
-	local overlay = Instance.new("Frame")
-	overlay.Name = "ModesPanel"
-	overlay.Size = UDim2.fromScale(1, 1)
-	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	overlay.BackgroundTransparency = 0.34
-	overlay.BorderSizePixel = 0
-	overlay.Visible = false
-	overlay.Active = true
-	overlay.ZIndex = 30
-	overlay.Parent = parent
-
-	local shell = createCenteredShell(overlay, "ModesModal", UDim2.new(0.66, 0, 0.66, 0), Vector2.new(700, 520), Vector2.new(900, 660))
-	shell.ZIndex = 31
-	addPadding(shell, 30, 26, 30, 30)
-	createSectionTitle(shell, "Modes", 0, 0, 180)
-	local status = createLabel(shell, "ModesStatusLabel", "Classic 4-Digit is active.", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 58), 16, COLORS.mutedText)
-	status.Font = Enum.Font.GothamBold
-
-	for index = 1, 2 do
-		local y = 104 + ((index - 1) * 136)
-		local row = createCard(shell, "ModeRow" .. tostring(index), UDim2.new(1, 0, 0, 116), UDim2.fromOffset(0, y), COLORS.panelAlt, 18)
-		addPadding(row, 20, 16, 20, 16)
-		local title = createLabel(row, "ModeNameLabel" .. tostring(index), "Mode", UDim2.new(1, -230, 0, 30), UDim2.fromOffset(0, 0), 24, COLORS.text)
-		title.Font = Enum.Font.GothamBlack
-		local description = createLabel(row, "ModeDescriptionLabel" .. tostring(index), "Description", UDim2.new(1, -230, 0, 48), UDim2.fromOffset(0, 38), 16, COLORS.mutedText)
-		description.TextYAlignment = Enum.TextYAlignment.Top
-		local state = createLabel(row, "ModeStateLabel" .. tostring(index), "Available", UDim2.fromOffset(160, 24), UDim2.new(1, -174, 0, 4), 16, COLORS.coin)
-		state.Font = Enum.Font.GothamBlack
-		state.TextXAlignment = Enum.TextXAlignment.Right
-		createButton(row, "ModeSelectButton" .. tostring(index), "Select", UDim2.fromOffset(154, 44), UDim2.new(1, -154, 1, -44), "Primary").TextSize = 16
-	end
-
-	local footer = createCard(shell, "ModesFooter", UDim2.new(1, 0, 0, 64), UDim2.new(0, 0, 1, -64), COLORS.panelAlt, 18)
-	footer.BackgroundTransparency = 0.08
-	createButton(footer, "CloseModesButton", "Close", UDim2.fromOffset(156, 44), UDim2.new(1, -174, 0, 10), "Secondary")
-	setTreeZIndex(shell, 32)
-end
-
 local function isCurrentGui(gui)
 	local matchScreen = gui:FindFirstChild("MatchScreen")
 	return gui:GetAttribute("UiVersion") == UI_VERSION
@@ -991,7 +952,6 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("RewardWheelBodyLabel", true)
 		and gui:FindFirstChild("RewardWheelSegment1", true)
 		and gui:FindFirstChild("LeaderboardPanel", true)
-		and gui:FindFirstChild("ModesPanel", true)
 		and gui:FindFirstChild("ResultSubtitleLabel", true)
 end
 
@@ -1059,7 +1019,6 @@ function GuiBuilder.getOrCreate(playerGui)
 	createCoinPacksPanel(screenGui)
 	createRewardsPanel(screenGui)
 	createLeaderboardPanel(screenGui)
-	createModesPanel(screenGui)
 
 	return screenGui
 end

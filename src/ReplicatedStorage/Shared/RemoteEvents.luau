@@ -114,7 +114,7 @@ return {
 	-- Server -> client. Payload: reward claim status and balance.
 	RewardStateChanged = getOrCreateRemoteEvent("RewardStateChanged"),
 
-	-- Client -> server. Payload: none; claims the current test reward.
+	-- Client -> server. Payload: none; claims the current daily reward.
 	RewardClaimRequested = getOrCreateRemoteEvent("RewardClaimRequested"),
 
 	-- Server -> client. Payload: opens the session leaderboard panel.
@@ -126,17 +126,8 @@ return {
 	-- Server -> client. Payload: refreshed leaderboard entries.
 	LeaderboardStateChanged = getOrCreateRemoteEvent("LeaderboardStateChanged"),
 
-	-- Server -> client. Payload: opens the game modes panel.
-	ModesOpened = getOrCreateRemoteEvent("ModesOpened"),
-
-	-- Client -> server. Payload: none; requests the game modes panel.
-	ModesOpenRequested = getOrCreateRemoteEvent("ModesOpenRequested"),
-
 	-- Server -> all clients. Payload: selected prototype mode and catalog.
 	ModeStateChanged = getOrCreateRemoteEvent("ModeStateChanged"),
-
-	-- Client -> server. Payload: mode id string.
-	ModeSelectRequested = getOrCreateRemoteEvent("ModeSelectRequested"),
 
 	-- Client -> server. Payload: none; opts into the post-game rematch flow.
 	RematchRequested = getOrCreateRemoteEvent("RematchRequested"),

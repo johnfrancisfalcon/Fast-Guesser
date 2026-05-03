@@ -91,7 +91,6 @@ local currencyHud = devGui:WaitForChild("CurrencyHud")
 local shopPanel = devGui:WaitForChild("ShopPanel")
 local rewardsPanel = devGui:WaitForChild("RewardsPanel")
 local leaderboardPanel = devGui:WaitForChild("LeaderboardPanel")
-local modesPanel = devGui:WaitForChild("ModesPanel")
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -191,8 +190,6 @@ local modeUi = {
 	historyHintLabel = findUi(matchScreen, "HistoryHintLabel"),
 	resultYourSecretLabel = findUi(resultScreen, "ResultYourSecretLabel"),
 	resultOpponentSecretLabel = findUi(resultScreen, "ResultOpponentSecretLabel"),
-	closeModesButton = findUi(modesPanel, "CloseModesButton"),
-	modesStatusLabel = findUi(modesPanel, "ModesStatusLabel"),
 	buyCoinsHudButton = findUi(currencyHud, "BuyCoinsHudButton"),
 	coinPacksPanel = devGui:WaitForChild("CoinPacksPanel"),
 	openCoinPacksButton = findUi(shopPanel, "OpenCoinPacksButton"),
@@ -204,7 +201,6 @@ modeUi.rewardNextClaimLabel = findUi(rewardsPanel, "RewardNextClaimLabel")
 modeUi.promptService = game:GetService("ProximityPromptService")
 modeUi.shopRows = {}
 modeUi.leaderboardRows = {}
-modeUi.modeRows = {}
 
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
@@ -360,11 +356,10 @@ local function getLocalCurrencyValue(state, key)
 	return valuesByPlayerId[tostring(localPlayer.UserId)]
 end
 
-local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible, modesVisible, coinPacksVisible)
+local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible, coinPacksVisible)
 	shopPanel.Visible = shopVisible == true
 	rewardsPanel.Visible = rewardsVisible == true
 	leaderboardPanel.Visible = leaderboardVisible == true
-	modesPanel.Visible = modesVisible == true
 	modeUi.coinPacksPanel.Visible = coinPacksVisible == true
 end
 
@@ -439,30 +434,6 @@ local function updateLeaderboardPanel(leaderboardState)
 			row.wins.Text = tostring(entry.wins or 0)
 			row.streak.Text = tostring(entry.currentStreak or 0)
 			row.coins.Text = tostring(entry.coins or 0)
-		end
-	end
-end
-
-local function updateModesPanel(modeState)
-	modeUi.latestModeState = modeState or modeUi.latestModeState
-	local state = modeUi.latestModeState
-	local modes = state and state.modes or {}
-	local selectedMode = state and state.selectedMode or nil
-	modeUi.modesStatusLabel.Text = (state and state.message) or "Choose a mode."
-
-	for index, row in ipairs(modeUi.modeRows) do
-		local mode = modes[index]
-		row.frame.Visible = mode ~= nil
-		if mode then
-			row.frame:SetAttribute("ModeId", mode.id)
-			row.name.Text = mode.name or "Mode"
-			row.description.Text = mode.description or ""
-			local isSelected = mode.id == selectedMode
-			local isEnabled = mode.enabled == true
-			local statusText = mode.status or (if isEnabled then "Available" else "Coming soon")
-			row.state.Text = if isSelected then "Active" else statusText
-			row.button.Text = if isSelected then "Selected" elseif isEnabled then "Select" else "Coming Soon"
-			setButtonEnabled(row.button, isEnabled and not isSelected)
 		end
 	end
 end
@@ -1528,7 +1499,7 @@ end
 
 local function onCoinPacksOpened(coinPackState)
 	howToPlayPanel.Visible = false
-	setCommercePanelsVisible(false, false, false, false, true)
+	setCommercePanelsVisible(false, false, false, true)
 	updateCoinPacksPanel(coinPackState)
 end
 
@@ -1556,14 +1527,8 @@ local function onLeaderboardStateChanged(leaderboardState)
 	updateLeaderboardPanel(leaderboardState)
 end
 
-local function onModesOpened(modeState)
-	howToPlayPanel.Visible = false
-	setCommercePanelsVisible(false, false, false, true)
-	updateModesPanel(modeState)
-end
-
 local function onModeStateChanged(modeState)
-	updateModesPanel(modeState)
+	modeUi.latestModeState = modeState or modeUi.latestModeState
 	secretTextBox.Text = clampModeInput(secretTextBox.Text)
 	guessTextBox.Text = clampModeInput(guessTextBox.Text)
 	setMenuPresentationForMode()
@@ -1661,7 +1626,7 @@ local function onLobbyPromptTriggered(prompt)
 
 	local modeId = prompt:GetAttribute("ModeId")
 	if modeId then
-		setCommercePanelsVisible(false, false, false, false, false)
+		setCommercePanelsVisible(false, false, false, false)
 		howToPlayPanel.Visible = false
 		RemoteEvents.PlayModeRequested:FireServer(modeId)
 	elseif prompt.Name == "ShopPrompt" then
@@ -1713,16 +1678,6 @@ for index = 1, 6 do
 	}
 end
 
-for index = 1, 2 do
-	modeUi.modeRows[index] = {
-		frame = findUi(modesPanel, "ModeRow" .. tostring(index)),
-		name = findUi(modesPanel, "ModeNameLabel" .. tostring(index)),
-		description = findUi(modesPanel, "ModeDescriptionLabel" .. tostring(index)),
-		state = findUi(modesPanel, "ModeStateLabel" .. tostring(index)),
-		button = findUi(modesPanel, "ModeSelectButton" .. tostring(index)),
-	}
-end
-
 for _, descendant in ipairs(devGui:GetDescendants()) do
 	if descendant:IsA("TextButton") then
 		wireButtonInteractions(descendant)
@@ -1745,7 +1700,7 @@ playButton.MouseButton1Click:Connect(function()
 end)
 
 menuBackButton.MouseButton1Click:Connect(function()
-	setCommercePanelsVisible(false, false, false, false, false)
+	setCommercePanelsVisible(false, false, false, false)
 	howToPlayPanel.Visible = false
 	clearValidationMessages()
 	resetRoundUi()
@@ -1766,20 +1721,20 @@ closeShopButton.MouseButton1Click:Connect(function()
 end)
 
 modeUi.openCoinPacksButton.MouseButton1Click:Connect(function()
-	setCommercePanelsVisible(false, false, false, false, true)
+	setCommercePanelsVisible(false, false, false, true)
 	updateCoinPacksPanel()
 	RemoteEvents.CoinPacksOpenRequested:FireServer()
 end)
 
 modeUi.buyCoinsHudButton.MouseButton1Click:Connect(function()
 	howToPlayPanel.Visible = false
-	setCommercePanelsVisible(false, false, false, false, true)
+	setCommercePanelsVisible(false, false, false, true)
 	updateCoinPacksPanel()
 	RemoteEvents.CoinPacksOpenRequested:FireServer()
 end)
 
 modeUi.closeCoinPacksButton.MouseButton1Click:Connect(function()
-	setCommercePanelsVisible(false, false, false, false, false)
+	setCommercePanelsVisible(false, false, false, false)
 end)
 
 closeRewardsButton.MouseButton1Click:Connect(function()
@@ -1788,10 +1743,6 @@ end)
 
 closeLeaderboardButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false)
-end)
-
-modeUi.closeModesButton.MouseButton1Click:Connect(function()
-	setCommercePanelsVisible(false, false, false, false)
 end)
 
 for _, row in ipairs(modeUi.shopRows) do
@@ -1818,17 +1769,6 @@ for _, row in ipairs(modeUi.coinPackRows) do
 			modeUi.coinPacksStatusLabel.Text = "Opening Roblox purchase prompt..."
 			setButtonEnabled(row.button, false)
 			RemoteEvents.CoinPackPurchaseRequested:FireServer(packId)
-		end
-	end)
-end
-
-for _, row in ipairs(modeUi.modeRows) do
-	row.button.MouseButton1Click:Connect(function()
-		local modeId = row.frame:GetAttribute("ModeId")
-		if modeId then
-			modeUi.modesStatusLabel.Text = "Selecting..."
-			setButtonEnabled(row.button, false)
-			RemoteEvents.ModeSelectRequested:FireServer(modeId)
 		end
 	end)
 end
@@ -1880,7 +1820,6 @@ RemoteEvents.RewardsOpened.OnClientEvent:Connect(onRewardsOpened)
 RemoteEvents.RewardStateChanged.OnClientEvent:Connect(onRewardStateChanged)
 RemoteEvents.LeaderboardOpened.OnClientEvent:Connect(onLeaderboardOpened)
 RemoteEvents.LeaderboardStateChanged.OnClientEvent:Connect(onLeaderboardStateChanged)
-RemoteEvents.ModesOpened.OnClientEvent:Connect(onModesOpened)
 RemoteEvents.ModeStateChanged.OnClientEvent:Connect(onModeStateChanged)
 RemoteEvents.CosmeticsStateChanged.OnClientEvent:Connect(onCosmeticsStateChanged)
 RemoteEvents.LobbyFlowStateChanged.OnClientEvent:Connect(onLobbyFlowStateChanged)

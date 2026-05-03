@@ -593,29 +593,6 @@ local function onLeaderboardPromptRequested(player)
 	LeaderboardService.openLeaderboard(player)
 end
 
-local function onModeSelectRequested(player, modeId)
-	local mode = getModeById(modeId)
-	if not mode then
-		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("That mode is not available."))
-		return
-	end
-
-	if not mode.enabled then
-		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState(mode.name .. " is coming soon."))
-		return
-	end
-
-	if currentGameState ~= GAME_STATES.WaitingForPlayers or prototypeMatchId then
-		RemoteEvents.ModeStateChanged:FireClient(player, buildModeState("Mode selection is locked once a round is active."))
-		return
-	end
-
-	selectedMode = mode.id
-	fireModeStateChanged(mode.name .. " selected.")
-	fireLobbyStateChanged()
-	fireRoundStateChanged()
-end
-
 local function selectModeForPrompt(player, modeId)
 	local mode = getModeById(modeId)
 	if not mode then
@@ -874,7 +851,6 @@ function PrototypeMatchServer.start()
 	RemoteEvents.CosmeticsStateRequested.OnServerEvent:Connect(function(player)
 		EconomyService.sendCosmeticsState(player)
 	end)
-	RemoteEvents.ModeSelectRequested.OnServerEvent:Connect(onModeSelectRequested)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		detectPlayer(player)
