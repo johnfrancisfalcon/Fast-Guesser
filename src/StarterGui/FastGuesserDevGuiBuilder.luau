@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 21
+local UI_VERSION = 22
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -835,7 +835,7 @@ local function createRewardsPanel(parent)
 	addPadding(card, 24, 22, 24, 22)
 	local title = createLabel(card, "RewardTitleLabel", "Daily Coins", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 0), 26, COLORS.text)
 	title.Font = Enum.Font.GothamBlack
-	createLabel(card, "RewardBodyLabel", "Claim once per UTC day. This reward state is saved and ready to grow into streaks or a full wheel.", UDim2.new(1, -240, 0, 70), UDim2.fromOffset(0, 46), 17, COLORS.mutedText)
+	createLabel(card, "RewardBodyLabel", "Claim once per UTC day. The server saves your claim state, so today's reward cannot be claimed twice.", UDim2.new(1, -240, 0, 70), UDim2.fromOffset(0, 46), 17, COLORS.mutedText)
 	local amount = createLabel(card, "RewardAmountLabel", "+25", UDim2.fromOffset(200, 58), UDim2.new(1, -210, 0, 48), 44, COLORS.coin)
 	amount.Font = Enum.Font.GothamBlack
 	amount.TextXAlignment = Enum.TextXAlignment.Right
@@ -845,7 +845,7 @@ local function createRewardsPanel(parent)
 	local wheelCard = createCard(shell, "RewardWheelCard", UDim2.new(1, 0, 0, 126), UDim2.fromOffset(0, 328), COLORS.panelAlt, 18)
 	addPadding(wheelCard, 20, 18, 20, 18)
 	createLabel(wheelCard, "RewardWheelTitleLabel", "Wheel Preview", UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, 0), 20, COLORS.text).Font = Enum.Font.GothamBlack
-	createLabel(wheelCard, "RewardWheelBodyLabel", "Segment data is server-owned; animation can be layered on later.", UDim2.new(1, 0, 0, 22), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
+	createLabel(wheelCard, "RewardWheelBodyLabel", "Reward wheel coming next. These server-owned segments are ready for a future spin action.", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
 	for index = 1, 5 do
 		local segment = createCard(wheelCard, "RewardWheelSegment" .. tostring(index), UDim2.new(0.2, -8, 0, 36), UDim2.new((index - 1) * 0.2, 4, 0, 66), COLORS.panelRaised, 12)
 		local label = createLabel(segment, "RewardWheelSegmentLabel" .. tostring(index), "-", UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 16, COLORS.coin)
@@ -986,6 +986,9 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("CoinPackRow1", true)
 		and gui:FindFirstChild("RewardsPanel", true)
 		and gui:FindFirstChild("RewardNextClaimLabel", true)
+		and gui:FindFirstChild("RewardTitleLabel", true)
+		and gui:FindFirstChild("RewardBodyLabel", true)
+		and gui:FindFirstChild("RewardWheelBodyLabel", true)
 		and gui:FindFirstChild("RewardWheelSegment1", true)
 		and gui:FindFirstChild("LeaderboardPanel", true)
 		and gui:FindFirstChild("ModesPanel", true)

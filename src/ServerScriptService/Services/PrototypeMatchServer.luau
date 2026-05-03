@@ -869,7 +869,7 @@ function PrototypeMatchServer.start()
 		end
 	end)
 	RemoteEvents.RewardClaimRequested.OnServerEvent:Connect(function(player)
-		EconomyService.claimTestReward(player)
+		EconomyService.claimDailyReward(player)
 	end)
 	RemoteEvents.CosmeticsStateRequested.OnServerEvent:Connect(function(player)
 		EconomyService.sendCosmeticsState(player)

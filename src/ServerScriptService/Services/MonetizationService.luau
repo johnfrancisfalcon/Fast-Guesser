@@ -4,42 +4,29 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local EconomyService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("EconomyService"))
+local MonetizationConfig = require(ServerScriptService:WaitForChild("Config"):WaitForChild("MonetizationConfig"))
 local RemoteEvents = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RemoteEvents"))
 
 local MonetizationService = {}
 
--- Replace these placeholder IDs with real Developer Product IDs from the Roblox creator dashboard.
-local COIN_PACKS = {
-	{
-		id = "small_coins",
-		name = "Small Coin Pack",
-		coins = 100,
-		productId = 0,
-		description = "A quick boost for a first cosmetic.",
-	},
-	{
-		id = "medium_coins",
-		name = "Medium Coin Pack",
-		coins = 300,
-		productId = 0,
-		description = "Enough coins to try a few shop items.",
-	},
-	{
-		id = "large_coins",
-		name = "Large Coin Pack",
-		coins = 750,
-		productId = 0,
-		description = "A larger cosmetic budget for future releases.",
-	},
-}
+local COIN_PACKS = MonetizationConfig.CoinPacks
 
 local packById = {}
 local packByProductId = {}
+local hasStarted = false
+
+local function isConfiguredProductId(productId)
+	return type(productId) == "number" and productId > 0
+end
 
 for _, pack in ipairs(COIN_PACKS) do
 	packById[pack.id] = pack
-	if pack.productId and pack.productId > 0 then
-		packByProductId[pack.productId] = pack
+	if isConfiguredProductId(pack.productId) then
+		if packByProductId[pack.productId] then
+			warn("[FastGuesser] Duplicate Developer Product ID in monetization config:", pack.productId)
+		else
+			packByProductId[pack.productId] = pack
+		end
 	end
 end
 
@@ -66,7 +53,7 @@ function MonetizationService.requestPurchase(player, packId)
 		return false
 	end
 
-	if not pack.productId or pack.productId <= 0 then
+	if not isConfiguredProductId(pack.productId) then
 		fireState(player, "Developer Product ID is not configured yet.")
 		return false
 	end
@@ -88,8 +75,9 @@ function MonetizationService.processReceipt(receiptInfo)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
-	local granted = EconomyService.grantProductCurrency(player, pack.coins, receiptInfo.PurchaseId)
+	local granted, grantMessage = EconomyService.grantProductCurrency(player, pack.coins, receiptInfo.PurchaseId)
 	if not granted then
+		warn("[FastGuesser] Developer Product receipt deferred:", receiptInfo.ProductId, receiptInfo.PurchaseId, grantMessage)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
@@ -98,6 +86,11 @@ function MonetizationService.processReceipt(receiptInfo)
 end
 
 function MonetizationService.start()
+	if hasStarted then
+		return
+	end
+
+	hasStarted = true
 	MarketplaceService.ProcessReceipt = MonetizationService.processReceipt
 end
 

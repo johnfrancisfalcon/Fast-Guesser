@@ -165,8 +165,11 @@ local shopStatusLabel = findUi(shopPanel, "ShopStatusLabel")
 local closeRewardsButton = findUi(rewardsPanel, "CloseRewardsButton")
 local rewardsBalanceLabel = findUi(rewardsPanel, "RewardsBalanceLabel")
 local rewardsStatusLabel = findUi(rewardsPanel, "RewardsStatusLabel")
+local rewardTitleLabel = findUi(rewardsPanel, "RewardTitleLabel")
+local rewardBodyLabel = findUi(rewardsPanel, "RewardBodyLabel")
 local rewardAmountLabel = findUi(rewardsPanel, "RewardAmountLabel")
 local claimRewardButton = findUi(rewardsPanel, "ClaimRewardButton")
+local rewardWheelBodyLabel = findUi(rewardsPanel, "RewardWheelBodyLabel")
 local closeLeaderboardButton = findUi(leaderboardPanel, "CloseLeaderboardButton")
 local leaderboardStatusLabel = findUi(leaderboardPanel, "LeaderboardStatusLabel")
 local leaderboardEmptyLabel = findUi(leaderboardPanel, "LeaderboardEmptyLabel")
@@ -471,12 +474,17 @@ local function updateRewardsPanel(rewardState)
 	local claimAmount = (state and state.claimAmount) or 0
 	local canClaim = state == nil or state.canClaim == true
 	local claimed = state and state.claimed == true
+	rewardTitleLabel.Text = (state and state.title) or "Daily Coins"
+	rewardBodyLabel.Text = if canClaim
+		then "Your daily coin reward is available now. Claiming updates your saved progression immediately."
+		else "Today's daily reward is already claimed. Come back after the next UTC reset."
 	rewardAmountLabel.Text = "+" .. tostring(claimAmount) .. " coins"
 	claimRewardButton.Text = if canClaim then "Claim Daily Reward" else "Claimed Today"
 	setButtonEnabled(claimRewardButton, canClaim)
 	modeUi.rewardNextClaimLabel.Text = (state and state.nextClaimText) or "Ready now"
 	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then COLORS.successText else COLORS.disabledText
 	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
+	rewardWheelBodyLabel.Text = (state and state.wheelStatus) or "Reward wheel coming next. Daily coins are live now."
 
 	local segments = state and state.wheelSegments or {}
 	for index = 1, 5 do

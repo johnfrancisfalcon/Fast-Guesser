@@ -17,6 +17,11 @@ local REWARDS = {
 	DailyClaim = 25,
 }
 
+local REWARD_TYPES = {
+	Daily = "daily",
+	WheelPreview = "wheel_preview",
+}
+
 local REWARD_WHEEL_SEGMENTS = {
 	{ label = "+15", coins = 15, weight = 35 },
 	{ label = "+25", coins = 25, weight = 30 },
@@ -162,6 +167,34 @@ local function getCurrentUtcDay()
 	return string.format("%04d-%02d-%02d", now.year, now.month, now.day)
 end
 
+local function getNextUtcDayUnix()
+	local now = os.date("!*t")
+	return os.time({
+		year = now.year,
+		month = now.month,
+		day = now.day + 1,
+		hour = 0,
+		min = 0,
+		sec = 0,
+	})
+end
+
+local function formatTimeRemaining(seconds)
+	seconds = math.max(0, math.floor(tonumber(seconds) or 0))
+	local hours = math.floor(seconds / 3600)
+	local minutes = math.floor((seconds % 3600) / 60)
+
+	if hours > 0 then
+		return string.format("%dh %02dm until next claim", hours, minutes)
+	end
+
+	if minutes > 0 then
+		return string.format("%dm until next claim", minutes)
+	end
+
+	return "Available soon"
+end
+
 local function shouldUseSessionFallback(loadError)
 	return RunService:IsStudio() and string.find(tostring(loadError), "Studio access to APIs is not allowed", 1, true) ~= nil
 end
@@ -270,14 +303,26 @@ local function buildRewardState(player, message)
 	local lastClaimDay = lastDailyClaimDayByPlayerId[playerKey]
 	local progressionReady = loadedByPlayerId[playerKey] == true and loadFailedByPlayerId[playerKey] ~= true
 	local canClaim = progressionReady and lastClaimDay ~= today
+	local nextClaimUnix = getNextUtcDayUnix()
+	local secondsUntilNextClaim = math.max(0, nextClaimUnix - os.time())
 	return {
 		balance = EconomyService.getBalance(player),
+		rewardType = REWARD_TYPES.Daily,
+		title = "Daily Coins",
 		claimAmount = REWARDS.DailyClaim,
 		claimed = not canClaim,
 		canClaim = canClaim,
 		lastClaimDay = lastClaimDay,
-		nextClaimText = if not progressionReady then "Progression loading" elseif canClaim then "Ready now" else "Come back tomorrow",
+		currentDay = today,
+		nextClaimUnix = nextClaimUnix,
+		secondsUntilNextClaim = secondsUntilNextClaim,
+		nextClaimText = if not progressionReady
+			then "Progression loading"
+			elseif canClaim then "Ready now"
+			else formatTimeRemaining(secondsUntilNextClaim),
 		wheelSegments = REWARD_WHEEL_SEGMENTS,
+		wheelEnabled = false,
+		wheelStatus = "Reward wheel coming next. Daily coins are live now.",
 		message = message,
 	}
 end
@@ -519,7 +564,29 @@ function EconomyService.openRewards(player)
 	RemoteEvents.RewardsOpened:FireClient(player, buildRewardState(player))
 end
 
-function EconomyService.claimTestReward(player)
+local function mergeProgressionSnapshot(currentData, playerKey)
+	currentData.version = DATA_VERSION
+	currentData.ownedItems = sanitizeOwnedItems(currentData.ownedItems)
+	for itemId, owned in pairs(ownedItemsByPlayerId[playerKey] or {}) do
+		if owned == true and isCatalogItemId(itemId) then
+			currentData.ownedItems[itemId] = true
+		end
+	end
+
+	currentData.equippedItems = sanitizeEquippedItems(currentData.equippedItems, currentData.ownedItems)
+	for category, itemId in pairs(equippedItemsByPlayerId[playerKey] or {}) do
+		local item = getCatalogItem(itemId)
+		if item and item.category == category and currentData.ownedItems[itemId] == true then
+			currentData.equippedItems[category] = itemId
+		end
+	end
+
+	currentData.processedReceipts = sanitizeProcessedReceipts(currentData.processedReceipts)
+	currentData.rewards = if type(currentData.rewards) == "table" then currentData.rewards else {}
+	return currentData
+end
+
+function EconomyService.claimDailyReward(player)
 	local playerKey = getPlayerKey(player)
 	if loadFailedByPlayerId[playerKey] or not loadedByPlayerId[playerKey] then
 		fireRewardState(player, "Daily rewards are unavailable until progression loads.")
@@ -527,17 +594,60 @@ function EconomyService.claimTestReward(player)
 	end
 
 	local today = getCurrentUtcDay()
-	if lastDailyClaimDayByPlayerId[playerKey] == today then
-		fireRewardState(player, "Daily reward already claimed. Come back tomorrow.")
-		return false, "Daily reward already claimed."
+	if sessionOnlyByPlayerId[playerKey] then
+		if lastDailyClaimDayByPlayerId[playerKey] == today then
+			fireRewardState(player, "Daily reward already claimed. Come back tomorrow.")
+			return false, "Daily reward already claimed."
+		end
+
+		rewardClaimedByPlayerId[playerKey] = true
+		lastDailyClaimDayByPlayerId[playerKey] = today
+		EconomyService.addCurrency(player, REWARDS.DailyClaim, "DailyReward")
+		fireRewardState(player, "Daily reward claimed.")
+		return true
 	end
 
-	rewardClaimedByPlayerId[playerKey] = true
-	lastDailyClaimDayByPlayerId[playerKey] = today
-	EconomyService.addCurrency(player, REWARDS.DailyClaim, "DailyReward")
-	fireRewardState(player, "Daily reward claimed.")
-	saveProgressionDeferred(player)
-	return true
+	local claimed = false
+	local updatedData = nil
+	local ok, updateError = pcall(function()
+		updatedData = progressionStore:UpdateAsync(getStoreKey(player), function(currentData)
+			currentData = if type(currentData) == "table" then currentData else {}
+			currentData = mergeProgressionSnapshot(currentData, playerKey)
+
+			if currentData.rewards.lastDailyClaimDay == today then
+				return currentData
+			end
+
+			local storedCoins = math.max(0, math.floor(tonumber(currentData.coins) or STARTING_BALANCE))
+			currentData.coins = math.max(storedCoins, EconomyService.getBalance(player)) + REWARDS.DailyClaim
+			currentData.rewards.lastDailyClaimDay = today
+			claimed = true
+			return currentData
+		end)
+	end)
+
+	if not ok then
+		warn("[FastGuesser] Daily reward claim failed for", playerKey, updateError)
+		fireRewardState(player, "Daily reward could not be claimed. Try again soon.")
+		return false, "Daily reward update failed."
+	end
+
+	applyLoadedData(player, updatedData)
+	rewardClaimedByPlayerId[playerKey] = claimed
+	if claimed then
+		fireBalanceChanged(player, REWARDS.DailyClaim, "DailyReward")
+		fireShopState(player)
+		fireRewardState(player, "Daily reward claimed.")
+	else
+		fireBalanceChanged(player, 0, "DailyRewardDuplicate")
+		fireRewardState(player, "Daily reward already claimed. Come back tomorrow.")
+	end
+
+	return claimed
+end
+
+function EconomyService.claimTestReward(player)
+	return EconomyService.claimDailyReward(player)
 end
 
 function EconomyService.getCosmeticsState()
