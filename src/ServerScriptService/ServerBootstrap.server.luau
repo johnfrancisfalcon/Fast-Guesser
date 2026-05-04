@@ -1,5 +1,5 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local PrototypeMatchServer = require(ServerScriptService:WaitForChild("Services"):WaitForChild("PrototypeMatchServer"))
+local GameSessionService = require(ServerScriptService:WaitForChild("Services"):WaitForChild("GameSessionService"))
 
-PrototypeMatchServer.start()
+GameSessionService.start()

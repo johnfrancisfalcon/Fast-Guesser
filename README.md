@@ -166,6 +166,7 @@ src/
   ReplicatedStorage/
     Shared/
       FeedbackLogic.luau
+      ModeCopy.luau
       RemoteEvents.luau
   ServerScriptService/
     ServerBootstrap.server.luau
@@ -178,6 +179,7 @@ src/
       LobbyWorldService.luau
       MatchService.luau
       MonetizationService.luau
+      GameSessionService.luau
       PrototypeMatchServer.luau
     Tests/
       FeedbackLogicTests.server.luau
@@ -196,11 +198,14 @@ src/
 
 - [`ServerBootstrap.server.luau`](src/ServerScriptService/ServerBootstrap.server.luau)
   - entrypoint
-  - currently starts `PrototypeMatchServer`
+  - starts `GameSessionService`
 
-- [`PrototypeMatchServer.luau`](src/ServerScriptService/Services/PrototypeMatchServer.luau)
+- [`GameSessionService.luau`](src/ServerScriptService/Services/GameSessionService.luau)
   - orchestrates the active playable experience
   - owns player session flow, matchmaking queues, lobby states, round states, rematch flow, reward distribution, and remote wiring
+
+- [`PrototypeMatchServer.luau`](src/ServerScriptService/Services/PrototypeMatchServer.luau)
+  - legacy compatibility wrapper that returns `GameSessionService`
 
 - [`MatchService.luau`](src/ServerScriptService/Services/MatchService.luau)
   - pure round rules and match state
@@ -226,6 +231,9 @@ src/
 - [`FeedbackLogic.luau`](src/ReplicatedStorage/Shared/FeedbackLogic.luau)
   - exact-match and locked-digit helpers for 4-digit mode
 
+- [`ModeCopy.luau`](src/ReplicatedStorage/Shared/ModeCopy.luau)
+  - shared mode-specific UI wording used by the client controller
+
 - [`RemoteEvents.luau`](src/ReplicatedStorage/Shared/RemoteEvents.luau)
   - creates/finds the game’s RemoteEvents folder and all event objects
 
@@ -236,7 +244,7 @@ src/
 
 - [`FastGuesserDevGui.client.luau`](src/StarterGui/FastGuesserDevGui.client.luau)
   - main UI controller
-  - handles screen flow, mode-specific copy, commerce panels, cosmetics rendering, and remote listeners
+  - handles screen flow, commerce panels, cosmetics rendering, and remote listeners
 
 - [`GameClient.client.luau`](src/StarterPlayer/StarterPlayerScripts/GameClient.client.luau)
   - currently just notes that working local UI logic lives in `StarterGui`
@@ -344,7 +352,7 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 - configured Developer Product IDs
 - broader cosmetic catalog
 - more robust automated testing
-- non-prototype naming cleanup
+- deeper session-service decomposition beyond the first naming cleanup
 
 ## Known Limitations / Pending Roadmap
 
@@ -356,9 +364,9 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 ### Structural limitations
 
-- `PrototypeMatchServer` still acts as the real game orchestration layer, so naming no longer matches responsibility.
+- `GameSessionService` now has the correct top-level name, but it still owns several responsibilities that should eventually split into smaller matchmaking, round orchestration, and remote wiring modules.
 - Matchmaking is server-local and appears designed for one active 2-player round flow at a time.
-- A lot of client behavior lives in one large LocalScript.
+- A lot of client behavior still lives in one large LocalScript, though mode-specific copy has been moved to a shared module.
 - The UI builder and UI controller are both large monolithic files.
 
 ### Product/feature limitations
@@ -370,7 +378,7 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 ## Suggested Next Development Priorities
 
-1. Rename/refactor `PrototypeMatchServer` into a clearer game session service and split matchmaking, round orchestration, and remote wiring.
+1. Split `GameSessionService` into smaller matchmaking, round orchestration, and remote wiring modules.
 2. Fill real Developer Product IDs and validate the purchase flow in Studio/live test.
 3. Convert the rewards wheel foundation into a real spin action, or simplify the world station if daily rewards remain the only reward loop.
 4. Break up `FastGuesserDevGui.client.luau` into smaller controller modules for lobby, match, results, shop, rewards, and cosmetics.
