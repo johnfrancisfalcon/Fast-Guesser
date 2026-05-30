@@ -58,12 +58,19 @@ function MonetizationService.requestPurchase(player, packId)
 		return false
 	end
 
+	print("[FastGuesser] Prompting Developer Product purchase", player.UserId, pack.id, pack.productId, pack.coins)
 	fireState(player, "Opening Roblox purchase prompt...")
 	MarketplaceService:PromptProductPurchase(player, pack.productId)
 	return true
 end
 
 function MonetizationService.processReceipt(receiptInfo)
+	print(
+		"[FastGuesser] ProcessReceipt fired",
+		receiptInfo.PlayerId,
+		receiptInfo.ProductId,
+		receiptInfo.PurchaseId
+	)
 	local pack = packByProductId[receiptInfo.ProductId]
 	if not pack then
 		warn("[FastGuesser] Unknown Developer Product receipt:", receiptInfo.ProductId)
@@ -72,15 +79,18 @@ function MonetizationService.processReceipt(receiptInfo)
 
 	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
 	if not player then
+		warn("[FastGuesser] Receipt player is not in server yet:", receiptInfo.PlayerId, receiptInfo.ProductId)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
+	print("[FastGuesser] Receipt matched coin pack", pack.id, pack.productId, pack.coins)
 	local granted, grantMessage = EconomyService.grantProductCurrency(player, pack.coins, receiptInfo.PurchaseId)
 	if not granted then
 		warn("[FastGuesser] Developer Product receipt deferred:", receiptInfo.ProductId, receiptInfo.PurchaseId, grantMessage)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
+	print("[FastGuesser] Receipt granted successfully", receiptInfo.ProductId, receiptInfo.PurchaseId)
 	fireState(player, "Purchased " .. pack.name .. ".")
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
@@ -91,6 +101,7 @@ function MonetizationService.start()
 	end
 
 	hasStarted = true
+	print("[FastGuesser] MonetizationService started; ProcessReceipt handler registered")
 	MarketplaceService.ProcessReceipt = MonetizationService.processReceipt
 end
 

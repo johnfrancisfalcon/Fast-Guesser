@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 24
+local UI_VERSION = 25
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -761,15 +761,15 @@ local function createShopPanel(parent)
 		local y = 104 + ((index - 1) * 94)
 		local row = createCard(shell, "ShopItemRow" .. tostring(index), UDim2.new(1, 0, 0, 82), UDim2.fromOffset(0, y), COLORS.panelAlt, 16)
 		addPadding(row, 18, 12, 18, 12)
-		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -360, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
+		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -372, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
 		name.Font = Enum.Font.GothamBold
-		local meta = createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -360, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
+		local meta = createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -372, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
 		meta.TextWrapped = false
-		local price = createLabel(row, "ShopItemPriceLabel" .. tostring(index), "0 coins", UDim2.fromOffset(96, 24), UDim2.new(1, -336, 0, 2), 18, COLORS.coin)
+		local price = createLabel(row, "ShopItemPriceLabel" .. tostring(index), "0 coins", UDim2.fromOffset(108, 24), UDim2.new(1, -348, 0, 2), 18, COLORS.coin)
 		applyCoinTextStyle(price)
 		price.TextWrapped = false
 		price.TextXAlignment = Enum.TextXAlignment.Right
-		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(96, 20), UDim2.new(1, -336, 0, 34), 14, COLORS.mutedText)
+		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(108, 20), UDim2.new(1, -348, 0, 34), 14, COLORS.mutedText)
 		state.Font = Enum.Font.GothamBold
 		state.TextWrapped = false
 		state.TextXAlignment = Enum.TextXAlignment.Right
@@ -810,10 +810,10 @@ local function createCoinPacksPanel(parent)
 		local y = 104 + ((index - 1) * 104)
 		local row = createCard(shell, "CoinPackRow" .. tostring(index), UDim2.new(1, 0, 0, 88), UDim2.fromOffset(0, y), COLORS.panelAlt, 16)
 		addPadding(row, 18, 13, 18, 13)
-		local name = createLabel(row, "CoinPackNameLabel" .. tostring(index), "Coin Pack", UDim2.new(1, -250, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
+		local name = createLabel(row, "CoinPackNameLabel" .. tostring(index), "Coin Pack", UDim2.new(1, -266, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
 		name.Font = Enum.Font.GothamBold
-		createLabel(row, "CoinPackDescriptionLabel" .. tostring(index), "Pack details", UDim2.new(1, -250, 0, 24), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
-		local amount = createLabel(row, "CoinPackAmountLabel" .. tostring(index), "+0 coins", UDim2.fromOffset(120, 26), UDim2.new(1, -244, 0, 4), 20, COLORS.coin)
+		createLabel(row, "CoinPackDescriptionLabel" .. tostring(index), "Pack details", UDim2.new(1, -266, 0, 24), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
+		local amount = createLabel(row, "CoinPackAmountLabel" .. tostring(index), "+0 coins", UDim2.fromOffset(142, 26), UDim2.new(1, -266, 0, 4), 20, COLORS.coin)
 		amount.Font = Enum.Font.GothamBlack
 		amount.TextXAlignment = Enum.TextXAlignment.Right
 		createButton(row, "CoinPackBuyButton" .. tostring(index), "Buy", UDim2.fromOffset(104, 44), UDim2.new(1, -104, 0, 9), "Primary").TextSize = 16

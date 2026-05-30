@@ -360,6 +360,16 @@ local function fireBalanceChanged(player, delta, reason)
 	})
 end
 
+local function finalizeProductGrant(player, grantAmount, receiptKey, reason)
+	local playerKey = getPlayerKey(player)
+	processedReceiptsByPlayerId[playerKey] = processedReceiptsByPlayerId[playerKey] or {}
+	processedReceiptsByPlayerId[playerKey][receiptKey] = true
+	balancesByPlayerId[playerKey] = EconomyService.getBalance(player) + grantAmount
+	fireBalanceChanged(player, grantAmount, reason or "DeveloperProduct")
+	fireShopState(player)
+	fireRewardState(player)
+end
+
 function EconomyService.ensureAccount(player)
 	local playerKey = getPlayerKey(player)
 	if isLocalStudioPlayer(player) and not loadedByPlayerId[playerKey] then
@@ -425,17 +435,35 @@ end
 function EconomyService.grantProductCurrency(player, amount, purchaseId)
 	local playerKey = getPlayerKey(player)
 	if loadFailedByPlayerId[playerKey] or not loadedByPlayerId[playerKey] then
+		warn("[FastGuesser] Product grant rejected because progression is not ready for", playerKey)
 		return false, "Progression is not ready."
 	end
 
 	local receiptKey = tostring(purchaseId)
 	local grantAmount = math.max(0, math.floor(tonumber(amount) or 0))
 	if grantAmount <= 0 then
+		warn("[FastGuesser] Product grant rejected because amount is invalid for", playerKey, amount)
 		return false, "Invalid product grant."
+	end
+
+	local processedReceipts = processedReceiptsByPlayerId[playerKey] or {}
+	if processedReceipts[receiptKey] == true then
+		print("[FastGuesser] Duplicate product receipt ignored from session cache", playerKey, receiptKey)
+		fireBalanceChanged(player, 0, "DeveloperProductDuplicate")
+		fireShopState(player)
+		fireRewardState(player)
+		return true
+	end
+
+	if sessionOnlyByPlayerId[playerKey] then
+		print("[FastGuesser] Granting Developer Product currency in session-only mode", playerKey, receiptKey, grantAmount)
+		finalizeProductGrant(player, grantAmount, receiptKey, "DeveloperProduct")
+		return true
 	end
 
 	local alreadyProcessed = false
 	local updatedData = nil
+	print("[FastGuesser] Processing Developer Product receipt", playerKey, receiptKey, grantAmount)
 	local ok, updateError = pcall(function()
 		updatedData = progressionStore:UpdateAsync(getStoreKey(player), function(currentData)
 			currentData = if type(currentData) == "table" then currentData else {}
@@ -474,8 +502,10 @@ function EconomyService.grantProductCurrency(player, amount, purchaseId)
 
 	applyLoadedData(player, updatedData)
 	if alreadyProcessed then
+		print("[FastGuesser] Duplicate product receipt ignored from DataStore", playerKey, receiptKey)
 		fireBalanceChanged(player, 0, "DeveloperProductDuplicate")
 	else
+		print("[FastGuesser] Developer Product grant applied", playerKey, receiptKey, grantAmount, EconomyService.getBalance(player))
 		fireBalanceChanged(player, grantAmount, "DeveloperProduct")
 	end
 	fireShopState(player)
