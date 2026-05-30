@@ -756,7 +756,7 @@ local function createShopPanel(parent)
 		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -340, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
 		name.Font = Enum.Font.GothamBold
 		createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -340, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
-		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(112, 24), UDim2.new(1, -322, 0, 2), 16, COLORS.coin)
+		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(112, 24), UDim2.new(1, -240, 0, 2), 16, COLORS.coin)
 		state.Font = Enum.Font.GothamBlack
 		state.TextXAlignment = Enum.TextXAlignment.Right
 		createButton(row, "ShopBuyButton" .. tostring(index), "Buy", UDim2.fromOffset(104, 44), UDim2.new(1, -214, 0, 7), "Primary").TextSize = 16
