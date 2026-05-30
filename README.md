@@ -147,7 +147,11 @@ Leaderboard stats are also persisted separately:
 
 ### Robux purchases
 
-A Developer Product purchase flow exists in code and reads coin pack IDs from [`src/ServerScriptService/Config/MonetizationConfig.luau`](src/ServerScriptService/Config/MonetizationConfig.luau). Product IDs are still `0` by default, so real Robux coin purchases become live only after the dashboard IDs are filled in.
+A Developer Product purchase flow exists in code and reads coin pack IDs from [`src/ServerScriptService/Config/MonetizationConfig.luau`](src/ServerScriptService/Config/MonetizationConfig.luau). The current configured product IDs are:
+
+- Small coin pack: `3601104527`
+- Medium coin pack: `3601104748`
+- Large coin pack: `3601104844`
 
 ## Current Project Structure
 
@@ -340,7 +344,7 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 ### Implemented but still rough
 
-- coin pack purchase UI until real Developer Product IDs are configured
+- coin pack purchase UI
 - reward wheel foundation / segment presentation
 - smoke-test scripts
 - generated lobby presentation
@@ -349,43 +353,69 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 - real spin wheel behavior and animation
 - real rewards wheel claim mechanic beyond daily claim
-- configured Developer Product IDs
 - broader cosmetic catalog
 - more robust automated testing
 - deeper session-service decomposition beyond the first naming cleanup
 
-## Known Limitations / Pending Roadmap
+## Known Constraints
 
-### High-priority gaps
+- matchmaking is currently server-local
+- the current architecture appears centered on one active 2-player round flow at a time
+- most practical testing still happens through Roblox Studio local multiplayer
+- smoke tests exist, but are still lightweight and not part of a robust automated harness
+- monetization UI is present, and the configured product IDs still need end-to-end Studio/live validation
 
-- Robux coin packs are not live because product IDs are unset.
-- The rewards wheel has server-owned segment data but no spin action yet.
-- Testing is mostly manual in Studio.
+## Roadmap Phases
 
-### Structural limitations
+### Phase 1: Monetization Validation
 
-- `GameSessionService` now has the correct top-level name, but it still owns several responsibilities that should eventually split into smaller matchmaking, round orchestration, and remote wiring modules.
-- Matchmaking is server-local and appears designed for one active 2-player round flow at a time.
-- A lot of client behavior still lives in one large LocalScript, though mode-specific copy has been moved to a shared module.
-- The UI builder and UI controller are both large monolithic files.
+- verify each coin pack opens the purchase prompt
+- verify receipt processing grants the correct amount of coins
+- verify duplicate receipt protection works as expected
 
-### Product/feature limitations
+### Phase 2: Rewards Feature Completion
 
-- Shop catalog is small.
-- Leaderboard is server-session presentation backed by per-player persisted stats, not a global ordered board UI.
-- The lobby is functional but not highly polished.
-- Some item descriptions still describe themselves as placeholders even when partial effects now exist.
+- decide whether the rewards station remains a daily-claim-plus-wheel feature or daily claim only
+- if wheel stays, implement weighted roll selection from the configured reward segments
+- add client feedback for spin outcome
+- update rewards copy to match the final mechanic
 
-## Suggested Next Development Priorities
+### Phase 3: Stability and Test Coverage
 
-1. Split `GameSessionService` into smaller matchmaking, round orchestration, and remote wiring modules.
-2. Fill real Developer Product IDs and validate the purchase flow in Studio/live test.
-3. Convert the rewards wheel foundation into a real spin action, or simplify the world station if daily rewards remain the only reward loop.
-4. Break up `FastGuesserDevGui.client.luau` into smaller controller modules for lobby, match, results, shop, rewards, and cosmetics.
-5. Add better automated tests around `MatchService`, `EconomyService`, and replay edge cases.
-6. Expand the cosmetic catalog and make shop descriptions match actual visible behavior.
-7. Improve lobby art/polish now that the core loop is playable.
+- add automated tests for `MatchService`
+- add automated tests for `EconomyService`
+- cover tie resolution, rematch edge cases, and higher/lower behavior
+- make smoke-test flow easier to run repeatedly
+
+### Phase 4: Codebase Decomposition
+
+- extract matchmaking, round orchestration, and remote wiring responsibilities from `GameSessionService`
+- split `FastGuesserDevGui.client.luau` into focused controller modules
+- split `FastGuesserDevGuiBuilder.luau` into reusable UI sections
+
+### Phase 5: Content and Polish
+
+- expand the cosmetic catalog
+- improve cosmetic preview clarity
+- upgrade lobby art, lighting, and station presentation
+- improve leaderboard presentation and onboarding/copy
+
+### Phase 6: Pending Features Expansion
+
+- decide which pending features are in MVP versus post-MVP scope
+- replace placeholder cosmetic descriptions with final player-facing copy
+- decide whether to keep the generated lobby presentation or invest in a deeper environment pass
+- review whether more game modes, reward loops, or progression hooks should be added
+
+## Current Recommended Priority Order
+
+1. Validate the configured Developer Product purchase flow.
+2. Finish or simplify the rewards wheel.
+3. Add better automated coverage for gameplay and economy.
+4. Split the monolithic session and client/UI files.
+5. Expand content and visual polish.
+6. Triage the remaining pending feature backlog into explicit MVP vs post-MVP scope.
 
 ## Repository Reality Check
 
-This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are real product ID configuration/testing, reward-wheel completion, codebase cleanup, and polish.
+This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are monetization validation, reward-wheel completion, stronger automated coverage, codebase cleanup, and final feature-scope decisions.

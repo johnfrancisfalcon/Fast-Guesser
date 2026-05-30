@@ -1,11 +1,10 @@
 local MonetizationConfig = {}
 
--- Fill these with Developer Product IDs from the Roblox Creator Dashboard.
--- Keep them as 0 in development to disable the corresponding purchase button.
+-- Roblox Creator Dashboard Developer Product IDs.
 MonetizationConfig.DeveloperProducts = {
-	SmallCoinPack = 0,
-	MediumCoinPack = 0,
-	LargeCoinPack = 0,
+	SmallCoinPack = 3601104527,
+	MediumCoinPack = 3601104748,
+	LargeCoinPack = 3601104844,
 }
 
 MonetizationConfig.CoinPacks = {
