@@ -327,10 +327,14 @@ local function updateShopPanel(shopState)
 		if item then
 			row.frame:SetAttribute("ItemId", item.id)
 			row.name.Text = item.name
-			row.meta.Text = item.category .. " • " .. tostring(item.price) .. " coins"
+			row.meta.Text = item.category
+			row.price.Text = tostring(item.price) .. " coins"
 			local owned = ownedItems[item.id] == true
 			local equipped = getEquippedItemIdByCategory(equippedItems, item.category) == item.id
-			row.state.Text = if equipped then "Equipped" elseif owned then "Owned" else tostring(item.price) .. " coins"
+			local stateText = if equipped then "Equipped" elseif owned then "Owned" else ""
+			row.state.Visible = stateText ~= ""
+			row.state.Text = stateText
+			row.state.TextColor3 = if equipped then COLORS.successText else COLORS.disabledText
 			setButtonEnabled(row.buyButton, not owned)
 			setButtonEnabled(row.equipButton, owned)
 			row.buyButton.Text = if owned then "Owned" else "Buy"
@@ -1593,6 +1597,7 @@ for index = 1, 4 do
 		frame = findUi(shopPanel, "ShopItemRow" .. tostring(index)),
 		name = findUi(shopPanel, "ShopItemNameLabel" .. tostring(index)),
 		meta = findUi(shopPanel, "ShopItemMetaLabel" .. tostring(index)),
+		price = findUi(shopPanel, "ShopItemPriceLabel" .. tostring(index)),
 		state = findUi(shopPanel, "ShopItemStateLabel" .. tostring(index)),
 		buyButton = findUi(shopPanel, "ShopBuyButton" .. tostring(index)),
 		equipButton = findUi(shopPanel, "ShopEquipButton" .. tostring(index)),

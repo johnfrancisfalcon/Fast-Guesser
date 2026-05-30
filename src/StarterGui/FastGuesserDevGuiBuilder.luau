@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 23
+local UI_VERSION = 24
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -151,6 +151,14 @@ local function createLabel(parent, name, text, size, position, textSize, color)
 	label.TextYAlignment = Enum.TextYAlignment.Center
 	label.Parent = parent
 
+	return label
+end
+
+local function applyCoinTextStyle(label)
+	label.TextColor3 = COLORS.coin
+	label.Font = Enum.Font.GothamBlack
+	label.TextStrokeColor3 = Color3.fromRGB(10, 12, 18)
+	label.TextStrokeTransparency = 0.18
 	return label
 end
 
@@ -753,11 +761,17 @@ local function createShopPanel(parent)
 		local y = 104 + ((index - 1) * 94)
 		local row = createCard(shell, "ShopItemRow" .. tostring(index), UDim2.new(1, 0, 0, 82), UDim2.fromOffset(0, y), COLORS.panelAlt, 16)
 		addPadding(row, 18, 12, 18, 12)
-		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -340, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
+		local name = createLabel(row, "ShopItemNameLabel" .. tostring(index), "Item", UDim2.new(1, -360, 0, 26), UDim2.fromOffset(0, 0), 21, COLORS.text)
 		name.Font = Enum.Font.GothamBold
-		createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -340, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
-		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(112, 24), UDim2.new(1, -240, 0, 2), 16, COLORS.coin)
-		state.Font = Enum.Font.GothamBlack
+		local meta = createLabel(row, "ShopItemMetaLabel" .. tostring(index), "Category", UDim2.new(1, -360, 0, 22), UDim2.fromOffset(0, 34), 15, COLORS.mutedText)
+		meta.TextWrapped = false
+		local price = createLabel(row, "ShopItemPriceLabel" .. tostring(index), "0 coins", UDim2.fromOffset(96, 24), UDim2.new(1, -336, 0, 2), 18, COLORS.coin)
+		applyCoinTextStyle(price)
+		price.TextWrapped = false
+		price.TextXAlignment = Enum.TextXAlignment.Right
+		local state = createLabel(row, "ShopItemStateLabel" .. tostring(index), "", UDim2.fromOffset(96, 20), UDim2.new(1, -336, 0, 34), 14, COLORS.mutedText)
+		state.Font = Enum.Font.GothamBold
+		state.TextWrapped = false
 		state.TextXAlignment = Enum.TextXAlignment.Right
 		createButton(row, "ShopBuyButton" .. tostring(index), "Buy", UDim2.fromOffset(104, 44), UDim2.new(1, -214, 0, 7), "Primary").TextSize = 16
 		createButton(row, "ShopEquipButton" .. tostring(index), "Equip", UDim2.fromOffset(94, 44), UDim2.new(1, -94, 0, 7), "Secondary").TextSize = 16
@@ -942,6 +956,7 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("ResultYourSecretLabel", true)
 		and gui:FindFirstChild("ResultOpponentSecretLabel", true)
 		and gui:FindFirstChild("ShopPanel", true)
+		and gui:FindFirstChild("ShopItemPriceLabel1", true)
 		and gui:FindFirstChild("CoinPacksPanel", true)
 		and gui:FindFirstChild("OpenCoinPacksButton", true)
 		and gui:FindFirstChild("CoinPackRow1", true)
