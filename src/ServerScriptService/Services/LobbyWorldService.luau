@@ -37,6 +37,12 @@ local function createPart(parent, name, size, position, color, material)
 	return part
 end
 
+local function createCFramePart(parent, name, size, cframe, color, material)
+	local part = createPart(parent, name, size, cframe.Position, color, material)
+	part.CFrame = cframe
+	return part
+end
+
 local function createSpawn(parent)
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "LobbySpawn"
@@ -184,6 +190,89 @@ local function createGameArea(parent, onPlayModeRequested)
 	)
 end
 
+local function createWheelSegment(parent, name, centerPosition, radius, angle, width, height, depth, color)
+	local radialOffset = Vector3.new(math.cos(angle) * radius, math.sin(angle) * radius, 0.54)
+	local cframe = CFrame.new(centerPosition + radialOffset) * CFrame.Angles(0, 0, angle)
+	return createCFramePart(parent, name, Vector3.new(width, height, depth), cframe, color, Enum.Material.Neon)
+end
+
+local function createWheelOrbit(parent, namePrefix, centerPosition, radius, count, size, color, material)
+	for index = 1, count do
+		local angle = ((index - 1) / count) * math.pi * 2
+		local offset = Vector3.new(math.cos(angle) * radius, math.sin(angle) * radius, 0)
+		local cframe = CFrame.new(centerPosition + offset) * CFrame.Angles(0, 0, angle)
+		createCFramePart(parent, namePrefix .. tostring(index), size, cframe, color, material)
+	end
+end
+
+local function createRewardWheelStructure(parent, centerPosition)
+	local supportLeft = createPart(parent, "RewardsWheelSupportLeft", Vector3.new(0.85, 5.3, 0.85), centerPosition + Vector3.new(-2.85, -0.75, -0.15), COLORS.platformDark)
+	local supportRight = createPart(parent, "RewardsWheelSupportRight", Vector3.new(0.85, 5.3, 0.85), centerPosition + Vector3.new(2.85, -0.75, -0.15), COLORS.platformDark)
+	createPart(parent, "RewardsWheelCrossbar", Vector3.new(6.8, 0.65, 0.85), centerPosition + Vector3.new(0, 1.8, -0.15), COLORS.platformDark)
+	createPart(parent, "RewardsWheelStandBase", Vector3.new(7.4, 0.7, 2.4), centerPosition + Vector3.new(0, -3.35, 0.1), COLORS.platformDark)
+	createPart(parent, "RewardsWheelStandGlow", Vector3.new(6.2, 0.18, 2.8), centerPosition + Vector3.new(0, -2.96, 0.1), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsWheelSupportGlowLeft", Vector3.new(0.28, 5.1, 0.28), supportLeft.Position + Vector3.new(0, 0, 0.58), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsWheelSupportGlowRight", Vector3.new(0.28, 5.1, 0.28), supportRight.Position + Vector3.new(0, 0, 0.58), COLORS.reward, Enum.Material.Neon)
+
+	local backPlate = createPart(parent, "RewardsWheelBackPlate", Vector3.new(7.9, 7.9, 0.42), centerPosition + Vector3.new(0, 0, 0.04), COLORS.platformDark)
+	backPlate.Shape = Enum.PartType.Cylinder
+	backPlate.Orientation = Vector3.new(90, 0, 0)
+
+	local rim = createPart(parent, "RewardsWheelRim", Vector3.new(7.15, 7.15, 0.52), centerPosition + Vector3.new(0, 0, 0.18), COLORS.reward, Enum.Material.Neon)
+	rim.Shape = Enum.PartType.Cylinder
+	rim.Orientation = Vector3.new(90, 0, 0)
+
+	local face = createPart(parent, "RewardsWheelFace", Vector3.new(6.35, 6.35, 0.26), centerPosition + Vector3.new(0, 0, 0.36), Color3.fromRGB(67, 54, 28), Enum.Material.SmoothPlastic)
+	face.Shape = Enum.PartType.Cylinder
+	face.Orientation = Vector3.new(90, 0, 0)
+
+	local segmentColors = {
+		COLORS.reward,
+		COLORS.warning,
+		Color3.fromRGB(255, 230, 148),
+		Color3.fromRGB(236, 182, 72),
+		Color3.fromRGB(255, 216, 118),
+		Color3.fromRGB(214, 154, 57),
+	}
+
+	for index = 1, 6 do
+		local angle = ((index - 1) / 6) * math.pi * 2
+		createWheelSegment(parent, "RewardsWheelSegment" .. tostring(index), centerPosition, 1.55, angle, 2.15, 1.55, 0.12, segmentColors[index])
+	end
+
+	for index = 1, 6 do
+		local angle = ((index - 1) / 6) * math.pi * 2
+		local dividerOffset = Vector3.new(math.cos(angle) * 2.15, math.sin(angle) * 2.15, 0.5)
+		local dividerCFrame = CFrame.new(centerPosition + dividerOffset) * CFrame.Angles(0, 0, angle)
+		createCFramePart(parent, "RewardsWheelDivider" .. tostring(index), Vector3.new(0.18, 2.75, 0.16), dividerCFrame, COLORS.platformDark, Enum.Material.Neon)
+	end
+
+	createWheelOrbit(parent, "RewardsWheelRimLight", centerPosition + Vector3.new(0, 0, 0.54), 2.95, 12, Vector3.new(0.55, 0.55, 0.16), COLORS.reward, Enum.Material.Neon)
+	createWheelOrbit(parent, "RewardsWheelInnerLight", centerPosition + Vector3.new(0, 0, 0.54), 1.1, 6, Vector3.new(0.42, 0.42, 0.12), Color3.fromRGB(255, 235, 160), Enum.Material.Neon)
+
+	local hub = createPart(parent, "RewardsWheelHub", Vector3.new(1.45, 1.45, 0.62), centerPosition + Vector3.new(0, 0, 0.58), COLORS.warning, Enum.Material.Neon)
+	hub.Shape = Enum.PartType.Cylinder
+	hub.Orientation = Vector3.new(90, 0, 0)
+
+	local axle = createPart(parent, "RewardsWheelAxle", Vector3.new(0.45, 0.45, 0.95), centerPosition + Vector3.new(0, 0, 0.1), COLORS.text, Enum.Material.Metal)
+	axle.Shape = Enum.PartType.Cylinder
+	axle.Orientation = Vector3.new(90, 0, 0)
+
+	local pointerBase = createPart(parent, "RewardsWheelPointerBase", Vector3.new(1.25, 0.4, 0.85), centerPosition + Vector3.new(0, 4.0, 0.24), COLORS.platformDark)
+	local pointer = createCFramePart(
+		parent,
+		"RewardsWheelPointer",
+		Vector3.new(1.1, 1.75, 0.36),
+		CFrame.new(pointerBase.Position + Vector3.new(0, -0.74, 0.42)) * CFrame.Angles(0, 0, math.rad(180)),
+		COLORS.warning,
+		Enum.Material.Neon
+	)
+	pointer.Shape = Enum.PartType.Wedge
+
+	local marquee = createPart(parent, "RewardsWheelMarquee", Vector3.new(4.6, 0.36, 0.7), centerPosition + Vector3.new(0, 4.58, -0.3), COLORS.reward, Enum.Material.Neon)
+	marquee.Orientation = Vector3.new(0, 0, -6)
+end
+
 local function createRewardWheel(parent, onRewardsRequested)
 	local _, wall, counter = createStation(
 		parent,
@@ -191,7 +280,7 @@ local function createRewardWheel(parent, onRewardsRequested)
 		Vector3.new(21, 0.05, 6),
 		COLORS.reward,
 		"Rewards",
-		"Claim coins now, wheel later",
+		"Daily coins and prize wheel",
 		{
 			name = "RewardsPrompt",
 			actionText = "Open Rewards",
@@ -199,16 +288,17 @@ local function createRewardWheel(parent, onRewardsRequested)
 		}
 	)
 
-	local wheelFrame = createPart(parent, "SpinWheelFrame", Vector3.new(7.5, 7.5, 0.55), Vector3.new(21, 4.4, 0.15), COLORS.platformDark)
-	wheelFrame:SetAttribute("FutureFeature", "SpinWheel")
-	local wheelFace = createPart(parent, "SpinWheelFace", Vector3.new(6.5, 6.5, 0.28), Vector3.new(21, 4.4, 0.48), COLORS.reward, Enum.Material.Neon)
-	wheelFace.Shape = Enum.PartType.Cylinder
-	wheelFace.Orientation = Vector3.new(90, 0, 0)
-	wheelFace:SetAttribute("FutureFeature", "SpinWheel")
-	createPart(parent, "SpinWheelPointer", Vector3.new(1.2, 1.8, 0.45), Vector3.new(21, 8.35, 0.75), COLORS.warning, Enum.Material.Neon)
-	createPart(parent, "RewardsCoinDisplay", Vector3.new(4.8, 0.4, 1.2), Vector3.new(21, 2.55, -1.05), COLORS.reward, Enum.Material.Neon)
-	counter:SetAttribute("FutureFeature", "Rewards")
-	wall:SetAttribute("FutureFeature", "Rewards")
+	local wheelCenter = Vector3.new(21, 4.95, 0.2)
+	createRewardWheelStructure(parent, wheelCenter)
+
+	createPart(parent, "RewardsCounterGlow", Vector3.new(8.6, 0.22, 2.95), Vector3.new(21, 2.42, 3.45), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsCoinDisplay", Vector3.new(5.2, 0.4, 1.3), Vector3.new(21, 2.78, 2.2), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsCoinDisplayTrim", Vector3.new(5.7, 0.18, 0.5), Vector3.new(21, 2.98, 2.9), COLORS.warning, Enum.Material.Neon)
+	createPart(parent, "RewardsSideLightLeft", Vector3.new(0.34, 4.9, 4.6), Vector3.new(15.45, 2.7, 1.35), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsSideLightRight", Vector3.new(0.34, 4.9, 4.6), Vector3.new(26.55, 2.7, 1.35), COLORS.reward, Enum.Material.Neon)
+	createPart(parent, "RewardsFrontGuide", Vector3.new(10.2, 0.18, 1.1), Vector3.new(21, 0.18, 12.15), COLORS.warning, Enum.Material.Neon)
+	counter.Position = Vector3.new(21, 1.3, 3.55)
+	wall.Position = Vector3.new(21, 3.25, 0.15)
 end
 
 function LobbyWorldService.createLobby(onPlayModeRequested, onShopRequested, onRewardsRequested, onLeaderboardRequested)

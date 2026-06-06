@@ -858,8 +858,8 @@ local function createRewardsPanel(parent)
 
 	local wheelCard = createCard(shell, "RewardWheelCard", UDim2.new(1, 0, 0, 126), UDim2.fromOffset(0, 328), COLORS.panelAlt, 18)
 	addPadding(wheelCard, 20, 18, 20, 18)
-	createLabel(wheelCard, "RewardWheelTitleLabel", "Wheel Preview", UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, 0), 20, COLORS.text).Font = Enum.Font.GothamBlack
-	createLabel(wheelCard, "RewardWheelBodyLabel", "Reward wheel coming next. These server-owned segments are ready for a future spin action.", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
+	createLabel(wheelCard, "RewardWheelTitleLabel", "Prize Wheel Board", UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, 0), 20, COLORS.text).Font = Enum.Font.GothamBlack
+	createLabel(wheelCard, "RewardWheelBodyLabel", "The lobby station now shows the prize wheel structure. Daily coin claims are live today.", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
 	for index = 1, 5 do
 		local segment = createCard(wheelCard, "RewardWheelSegment" .. tostring(index), UDim2.new(0.2, -8, 0, 36), UDim2.new((index - 1) * 0.2, 4, 0, 66), COLORS.panelRaised, 12)
 		local label = createLabel(segment, "RewardWheelSegmentLabel" .. tostring(index), "-", UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 16, COLORS.coin)

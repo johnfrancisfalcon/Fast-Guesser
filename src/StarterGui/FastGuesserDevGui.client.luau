@@ -287,15 +287,9 @@ local themedOverlays = {}
 local themedScrollFrames = {}
 
 local devGui = GuiBuilder.getOrCreate(playerGui)
-local background = devGui:WaitForChild("Background")
-local menuScreen = devGui:WaitForChild("MenuScreen")
-local lobbyScreen = devGui:WaitForChild("LobbyScreen")
-local matchScreen = devGui:WaitForChild("MatchScreen")
-local resultScreen = devGui:WaitForChild("ResultScreen")
-local currencyHud = devGui:WaitForChild("CurrencyHud")
-local shopPanel = devGui:WaitForChild("ShopPanel")
-local rewardsPanel = devGui:WaitForChild("RewardsPanel")
-local leaderboardPanel = devGui:WaitForChild("LeaderboardPanel")
+local ui = {
+	mode = {},
+}
 
 local function findUi(parent, name)
 	local instance = parent:FindFirstChild(name, true)
@@ -303,109 +297,121 @@ local function findUi(parent, name)
 	return instance
 end
 
-local playButton = findUi(menuScreen, "PlayButton")
-local menuBackButton = findUi(menuScreen, "MenuBackButton")
-local howToPlayButton = findUi(menuScreen, "HowToPlayButton")
-local howToPlayPanel = findUi(menuScreen, "HowToPlayPanel")
-local closeHowToPlayButton = findUi(menuScreen, "CloseHowToPlayButton")
+do
+	ui.background = devGui:WaitForChild("Background")
+	ui.menuScreen = devGui:WaitForChild("MenuScreen")
+	ui.lobbyScreen = devGui:WaitForChild("LobbyScreen")
+	ui.matchScreen = devGui:WaitForChild("MatchScreen")
+	ui.resultScreen = devGui:WaitForChild("ResultScreen")
+	ui.currencyHud = devGui:WaitForChild("CurrencyHud")
+	ui.shopPanel = devGui:WaitForChild("ShopPanel")
+	ui.rewardsPanel = devGui:WaitForChild("RewardsPanel")
+	ui.leaderboardPanel = devGui:WaitForChild("LeaderboardPanel")
 
-local lobbyStatusLabel = findUi(lobbyScreen, "LobbyStatusLabel")
-local playerOneRow = findUi(lobbyScreen, "PlayerOneRow")
-local playerTwoRow = findUi(lobbyScreen, "PlayerTwoRow")
-local playerOneSlotLabel = findUi(lobbyScreen, "PlayerOneSlotLabel")
-local playerOneReadyLabel = findUi(lobbyScreen, "PlayerOneReadyLabel")
-local playerOneReadyPill = findUi(lobbyScreen, "PlayerOneRowReadyPill")
-local playerTwoSlotLabel = findUi(lobbyScreen, "PlayerTwoSlotLabel")
-local playerTwoReadyLabel = findUi(lobbyScreen, "PlayerTwoReadyLabel")
-local playerTwoReadyPill = findUi(lobbyScreen, "PlayerTwoRowReadyPill")
-local readyButton = findUi(lobbyScreen, "ReadyButton")
-local lobbyBackButton = findUi(lobbyScreen, "LobbyBackButton")
+	ui.playButton = findUi(ui.menuScreen, "PlayButton")
+	ui.menuBackButton = findUi(ui.menuScreen, "MenuBackButton")
+	ui.howToPlayButton = findUi(ui.menuScreen, "HowToPlayButton")
+	ui.howToPlayPanel = findUi(ui.menuScreen, "HowToPlayPanel")
+	ui.closeHowToPlayButton = findUi(ui.menuScreen, "CloseHowToPlayButton")
 
-local statusLabel = findUi(matchScreen, "StatusLabel")
-local secretPanel = findUi(matchScreen, "SecretPanel")
-local secretTextBox = findUi(matchScreen, "SecretTextBox")
-local submitSecretButton = findUi(matchScreen, "SubmitSecretButton")
-local secretValidationLabel = findUi(matchScreen, "SecretValidationLabel")
-local guessPanel = findUi(matchScreen, "GuessPanel")
-local guessTextBox = findUi(matchScreen, "GuessTextBox")
-local submitGuessButton = findUi(matchScreen, "SubmitGuessButton")
-local guessValidationLabel = findUi(matchScreen, "GuessValidationLabel")
-local playerLockedLabel = findUi(matchScreen, "PlayerLockedLabel")
-local opponentLockedLabel = findUi(matchScreen, "OpponentLockedLabel")
-local turnLabel = findUi(matchScreen, "TurnLabel")
-local statusChip = findUi(matchScreen, "StatusInfoChip")
-local statusChipLabel = findUi(matchScreen, "StatusChipLabel")
-local gameOverLabel = findUi(matchScreen, "GameOverLabel")
-local restartButton = findUi(matchScreen, "RestartButton")
-local guessHistoryFrame = findUi(matchScreen, "GuessHistoryFrame")
-local guessHistoryList = guessHistoryFrame:WaitForChild("GuessHistoryList")
-local secretStateLabel = findUi(matchScreen, "SecretStateLabel")
-local guessStateLabel = findUi(matchScreen, "GuessStateLabel")
-local playerLockedSlots = {
-	findUi(matchScreen, "PlayerLockedSlot1"),
-	findUi(matchScreen, "PlayerLockedSlot2"),
-	findUi(matchScreen, "PlayerLockedSlot3"),
-	findUi(matchScreen, "PlayerLockedSlot4"),
-}
-local opponentLockedSlots = {
-	findUi(matchScreen, "OpponentLockedSlot1"),
-	findUi(matchScreen, "OpponentLockedSlot2"),
-	findUi(matchScreen, "OpponentLockedSlot3"),
-	findUi(matchScreen, "OpponentLockedSlot4"),
-}
+	ui.lobbyStatusLabel = findUi(ui.lobbyScreen, "LobbyStatusLabel")
+	ui.playerOneRow = findUi(ui.lobbyScreen, "PlayerOneRow")
+	ui.playerTwoRow = findUi(ui.lobbyScreen, "PlayerTwoRow")
+	ui.playerOneSlotLabel = findUi(ui.lobbyScreen, "PlayerOneSlotLabel")
+	ui.playerOneReadyLabel = findUi(ui.lobbyScreen, "PlayerOneReadyLabel")
+	ui.playerOneReadyPill = findUi(ui.lobbyScreen, "PlayerOneRowReadyPill")
+	ui.playerTwoSlotLabel = findUi(ui.lobbyScreen, "PlayerTwoSlotLabel")
+	ui.playerTwoReadyLabel = findUi(ui.lobbyScreen, "PlayerTwoReadyLabel")
+	ui.playerTwoReadyPill = findUi(ui.lobbyScreen, "PlayerTwoRowReadyPill")
+	ui.readyButton = findUi(ui.lobbyScreen, "ReadyButton")
+	ui.lobbyBackButton = findUi(ui.lobbyScreen, "LobbyBackButton")
 
-local resultWinnerLabel = findUi(resultScreen, "ResultWinnerLabel")
-local resultSubtitleLabel = findUi(resultScreen, "ResultSubtitleLabel")
-local resultWinnerCard = findUi(resultScreen, "ResultWinnerCard")
-local resultStatusLabel = findUi(resultScreen, "ResultStatusLabel")
-local resultPlayAgainButton = findUi(resultScreen, "ResultPlayAgainButton")
-local backToMenuButton = findUi(resultScreen, "BackToMenuButton")
-local resultRewardLabel = findUi(resultScreen, "ResultRewardLabel")
-local currencyAmountLabel = findUi(currencyHud, "CurrencyAmountLabel")
-local currencyDeltaLabel = findUi(currencyHud, "CurrencyDeltaLabel")
-local closeShopButton = findUi(shopPanel, "CloseShopButton")
-local shopBalanceLabel = findUi(shopPanel, "ShopBalanceLabel")
-local shopStatusLabel = findUi(shopPanel, "ShopStatusLabel")
-local closeRewardsButton = findUi(rewardsPanel, "CloseRewardsButton")
-local rewardsBalanceLabel = findUi(rewardsPanel, "RewardsBalanceLabel")
-local rewardsStatusLabel = findUi(rewardsPanel, "RewardsStatusLabel")
-local rewardTitleLabel = findUi(rewardsPanel, "RewardTitleLabel")
-local rewardBodyLabel = findUi(rewardsPanel, "RewardBodyLabel")
-local rewardAmountLabel = findUi(rewardsPanel, "RewardAmountLabel")
-local claimRewardButton = findUi(rewardsPanel, "ClaimRewardButton")
-local rewardWheelBodyLabel = findUi(rewardsPanel, "RewardWheelBodyLabel")
-local closeLeaderboardButton = findUi(leaderboardPanel, "CloseLeaderboardButton")
-local leaderboardStatusLabel = findUi(leaderboardPanel, "LeaderboardStatusLabel")
-local leaderboardEmptyLabel = findUi(leaderboardPanel, "LeaderboardEmptyLabel")
+	ui.statusLabel = findUi(ui.matchScreen, "StatusLabel")
+	ui.secretPanel = findUi(ui.matchScreen, "SecretPanel")
+	ui.secretTextBox = findUi(ui.matchScreen, "SecretTextBox")
+	ui.submitSecretButton = findUi(ui.matchScreen, "SubmitSecretButton")
+	ui.secretValidationLabel = findUi(ui.matchScreen, "SecretValidationLabel")
+	ui.guessPanel = findUi(ui.matchScreen, "GuessPanel")
+	ui.guessTextBox = findUi(ui.matchScreen, "GuessTextBox")
+	ui.submitGuessButton = findUi(ui.matchScreen, "SubmitGuessButton")
+	ui.guessValidationLabel = findUi(ui.matchScreen, "GuessValidationLabel")
+	ui.playerLockedLabel = findUi(ui.matchScreen, "PlayerLockedLabel")
+	ui.opponentLockedLabel = findUi(ui.matchScreen, "OpponentLockedLabel")
+	ui.turnLabel = findUi(ui.matchScreen, "TurnLabel")
+	ui.statusChip = findUi(ui.matchScreen, "StatusInfoChip")
+	ui.statusChipLabel = findUi(ui.matchScreen, "StatusChipLabel")
+	ui.gameOverLabel = findUi(ui.matchScreen, "GameOverLabel")
+	ui.restartButton = findUi(ui.matchScreen, "RestartButton")
+	ui.guessHistoryFrame = findUi(ui.matchScreen, "GuessHistoryFrame")
+	ui.guessHistoryList = ui.guessHistoryFrame:WaitForChild("GuessHistoryList")
+	ui.secretStateLabel = findUi(ui.matchScreen, "SecretStateLabel")
+	ui.guessStateLabel = findUi(ui.matchScreen, "GuessStateLabel")
+	ui.playerLockedSlots = {
+		findUi(ui.matchScreen, "PlayerLockedSlot1"),
+		findUi(ui.matchScreen, "PlayerLockedSlot2"),
+		findUi(ui.matchScreen, "PlayerLockedSlot3"),
+		findUi(ui.matchScreen, "PlayerLockedSlot4"),
+	}
+	ui.opponentLockedSlots = {
+		findUi(ui.matchScreen, "OpponentLockedSlot1"),
+		findUi(ui.matchScreen, "OpponentLockedSlot2"),
+		findUi(ui.matchScreen, "OpponentLockedSlot3"),
+		findUi(ui.matchScreen, "OpponentLockedSlot4"),
+	}
 
-local modeUi = {
-	menuSubtitleLabel = findUi(menuScreen, "SubtitleLabel"),
-	menuTagLabel = findUi(menuScreen, "MenuTagLabel"),
-	menuHeadingLabel = findUi(menuScreen, "MenuHeadingLabel"),
-	menuBodyLabel = findUi(menuScreen, "MenuBodyLabel"),
-	menuInfoTextLabel = findUi(menuScreen, "MenuInfoTextLabel"),
-	menuInfoFootnoteLabel = findUi(menuScreen, "MenuInfoFootnoteLabel"),
-	howToPlayTextLabel = findUi(menuScreen, "HowToPlayTextLabel"),
-	matchSubtitleLabel = findUi(matchScreen, "SubtitleLabel"),
-	secretHelpLabel = findUi(matchScreen, "SecretHelpLabel"),
-	guessHelpLabel = findUi(matchScreen, "GuessHelpLabel"),
-	yourLockedCard = findUi(matchScreen, "YourLockedCard"),
-	opponentLockedCard = findUi(matchScreen, "OpponentLockedCard"),
-	highLowSummaryLabel = findUi(matchScreen, "HighLowSummaryLabel"),
-	historyHintLabel = findUi(matchScreen, "HistoryHintLabel"),
-	resultYourSecretLabel = findUi(resultScreen, "ResultYourSecretLabel"),
-	resultOpponentSecretLabel = findUi(resultScreen, "ResultOpponentSecretLabel"),
-	buyCoinsHudButton = findUi(currencyHud, "BuyCoinsHudButton"),
-	coinPacksPanel = devGui:WaitForChild("CoinPacksPanel"),
-	openCoinPacksButton = findUi(shopPanel, "OpenCoinPacksButton"),
-}
-modeUi.closeCoinPacksButton = findUi(modeUi.coinPacksPanel, "CloseCoinPacksButton")
-modeUi.coinPacksBalanceLabel = findUi(modeUi.coinPacksPanel, "CoinPacksBalanceLabel")
-modeUi.coinPacksStatusLabel = findUi(modeUi.coinPacksPanel, "CoinPacksStatusLabel")
-modeUi.rewardNextClaimLabel = findUi(rewardsPanel, "RewardNextClaimLabel")
-modeUi.promptService = game:GetService("ProximityPromptService")
-modeUi.shopRows = {}
-modeUi.leaderboardRows = {}
+	ui.resultWinnerLabel = findUi(ui.resultScreen, "ResultWinnerLabel")
+	ui.resultSubtitleLabel = findUi(ui.resultScreen, "ResultSubtitleLabel")
+	ui.resultWinnerCard = findUi(ui.resultScreen, "ResultWinnerCard")
+	ui.resultStatusLabel = findUi(ui.resultScreen, "ResultStatusLabel")
+	ui.resultPlayAgainButton = findUi(ui.resultScreen, "ResultPlayAgainButton")
+	ui.backToMenuButton = findUi(ui.resultScreen, "BackToMenuButton")
+	ui.resultRewardLabel = findUi(ui.resultScreen, "ResultRewardLabel")
+	ui.currencyAmountLabel = findUi(ui.currencyHud, "CurrencyAmountLabel")
+	ui.currencyDeltaLabel = findUi(ui.currencyHud, "CurrencyDeltaLabel")
+	ui.closeShopButton = findUi(ui.shopPanel, "CloseShopButton")
+	ui.shopBalanceLabel = findUi(ui.shopPanel, "ShopBalanceLabel")
+	ui.shopStatusLabel = findUi(ui.shopPanel, "ShopStatusLabel")
+	ui.closeRewardsButton = findUi(ui.rewardsPanel, "CloseRewardsButton")
+	ui.rewardsBalanceLabel = findUi(ui.rewardsPanel, "RewardsBalanceLabel")
+	ui.rewardsStatusLabel = findUi(ui.rewardsPanel, "RewardsStatusLabel")
+	ui.rewardTitleLabel = findUi(ui.rewardsPanel, "RewardTitleLabel")
+	ui.rewardBodyLabel = findUi(ui.rewardsPanel, "RewardBodyLabel")
+	ui.rewardAmountLabel = findUi(ui.rewardsPanel, "RewardAmountLabel")
+	ui.claimRewardButton = findUi(ui.rewardsPanel, "ClaimRewardButton")
+	ui.rewardWheelBodyLabel = findUi(ui.rewardsPanel, "RewardWheelBodyLabel")
+	ui.closeLeaderboardButton = findUi(ui.leaderboardPanel, "CloseLeaderboardButton")
+	ui.leaderboardStatusLabel = findUi(ui.leaderboardPanel, "LeaderboardStatusLabel")
+	ui.leaderboardEmptyLabel = findUi(ui.leaderboardPanel, "LeaderboardEmptyLabel")
+
+	ui.mode.menuSubtitleLabel = findUi(ui.menuScreen, "SubtitleLabel")
+	ui.mode.menuTagLabel = findUi(ui.menuScreen, "MenuTagLabel")
+	ui.mode.menuHeadingLabel = findUi(ui.menuScreen, "MenuHeadingLabel")
+	ui.mode.menuBodyLabel = findUi(ui.menuScreen, "MenuBodyLabel")
+	ui.mode.menuInfoTextLabel = findUi(ui.menuScreen, "MenuInfoTextLabel")
+	ui.mode.menuInfoFootnoteLabel = findUi(ui.menuScreen, "MenuInfoFootnoteLabel")
+	ui.mode.howToPlayTextLabel = findUi(ui.menuScreen, "HowToPlayTextLabel")
+	ui.mode.matchSubtitleLabel = findUi(ui.matchScreen, "SubtitleLabel")
+	ui.mode.secretHelpLabel = findUi(ui.matchScreen, "SecretHelpLabel")
+	ui.mode.guessHelpLabel = findUi(ui.matchScreen, "GuessHelpLabel")
+	ui.mode.yourLockedCard = findUi(ui.matchScreen, "YourLockedCard")
+	ui.mode.opponentLockedCard = findUi(ui.matchScreen, "OpponentLockedCard")
+	ui.mode.highLowSummaryLabel = findUi(ui.matchScreen, "HighLowSummaryLabel")
+	ui.mode.historyHintLabel = findUi(ui.matchScreen, "HistoryHintLabel")
+	ui.mode.resultYourSecretLabel = findUi(ui.resultScreen, "ResultYourSecretLabel")
+	ui.mode.resultOpponentSecretLabel = findUi(ui.resultScreen, "ResultOpponentSecretLabel")
+	ui.mode.buyCoinsHudButton = findUi(ui.currencyHud, "BuyCoinsHudButton")
+	ui.mode.coinPacksPanel = devGui:WaitForChild("CoinPacksPanel")
+	ui.mode.openCoinPacksButton = findUi(ui.shopPanel, "OpenCoinPacksButton")
+	ui.mode.closeCoinPacksButton = findUi(ui.mode.coinPacksPanel, "CloseCoinPacksButton")
+	ui.mode.coinPacksBalanceLabel = findUi(ui.mode.coinPacksPanel, "CoinPacksBalanceLabel")
+	ui.mode.coinPacksStatusLabel = findUi(ui.mode.coinPacksPanel, "CoinPacksStatusLabel")
+	ui.mode.rewardNextClaimLabel = findUi(ui.rewardsPanel, "RewardNextClaimLabel")
+	ui.mode.promptService = game:GetService("ProximityPromptService")
+	ui.mode.shopRows = {}
+	ui.mode.leaderboardRows = {}
+end
+
+local modeUi = ui.mode
 
 local currentUiState = UI_STATES.LobbyWorld
 local latestLobbyFlowState = LOBBY_STATES.InLobby
@@ -435,40 +441,41 @@ local registerThemeOverlay
 local registerThemeScrollFrame
 local getButtonVisualState
 local applyUiTheme
+local getEquippedForPlayer
 
 local function initializeUiThemeBindings()
 	local shells = {
-		findUi(menuScreen, "MenuShell"),
-		findUi(lobbyScreen, "LobbyShell"),
-		findUi(matchScreen, "MatchShell"),
-		findUi(resultScreen, "ResultShell"),
-		findUi(menuScreen, "HowToPlayModal"),
-		findUi(shopPanel, "ShopModal"),
+		findUi(ui.menuScreen, "MenuShell"),
+		findUi(ui.lobbyScreen, "LobbyShell"),
+		findUi(ui.matchScreen, "MatchShell"),
+		findUi(ui.resultScreen, "ResultShell"),
+		findUi(ui.menuScreen, "HowToPlayModal"),
+		findUi(ui.shopPanel, "ShopModal"),
 		findUi(modeUi.coinPacksPanel, "CoinPacksModal"),
-		findUi(rewardsPanel, "RewardsModal"),
-		findUi(leaderboardPanel, "LeaderboardModal"),
+		findUi(ui.rewardsPanel, "RewardsModal"),
+		findUi(ui.leaderboardPanel, "LeaderboardModal"),
 	}
 	for _, instance in ipairs(shells) do
 		registerThemeSurface(instance, "shell")
 	end
 
 	local strongPanels = {
-		findUi(menuScreen, "MenuHeroCard"),
-		findUi(lobbyScreen, "LobbyPanel"),
-		findUi(matchScreen, "StatusPanel"),
-		findUi(resultScreen, "ResultPanel"),
-		findUi(rewardsPanel, "RewardClaimCard"),
+		findUi(ui.menuScreen, "MenuHeroCard"),
+		findUi(ui.lobbyScreen, "LobbyPanel"),
+		findUi(ui.matchScreen, "StatusPanel"),
+		findUi(ui.resultScreen, "ResultPanel"),
+		findUi(ui.rewardsPanel, "RewardClaimCard"),
 	}
 	for _, instance in ipairs(strongPanels) do
 		registerThemeSurface(instance, "panelStrong")
 	end
 
 	local regularPanels = {
-		findUi(matchScreen, "SecretPanel"),
-		findUi(matchScreen, "LockedPanel"),
-		findUi(matchScreen, "HistoryPanel"),
-		findUi(resultScreen, "ResultSecretsCard"),
-		findUi(shopPanel, "ShopFooter"),
+		findUi(ui.matchScreen, "SecretPanel"),
+		findUi(ui.matchScreen, "LockedPanel"),
+		findUi(ui.matchScreen, "HistoryPanel"),
+		findUi(ui.resultScreen, "ResultSecretsCard"),
+		findUi(ui.shopPanel, "ShopFooter"),
 		findUi(modeUi.coinPacksPanel, "CoinPacksFooter"),
 	}
 	for _, instance in ipairs(regularPanels) do
@@ -476,28 +483,28 @@ local function initializeUiThemeBindings()
 	end
 
 	local alternatePanels = {
-		findUi(menuScreen, "MenuInfoCard"),
-		findUi(matchScreen, "OpponentLockedCard"),
-		findUi(matchScreen, "GuessHistoryFrame"),
-		findUi(rewardsPanel, "RewardWheelCard"),
-		findUi(leaderboardPanel, "LeaderboardHeaderRow"),
+		findUi(ui.menuScreen, "MenuInfoCard"),
+		findUi(ui.matchScreen, "OpponentLockedCard"),
+		findUi(ui.matchScreen, "GuessHistoryFrame"),
+		findUi(ui.rewardsPanel, "RewardWheelCard"),
+		findUi(ui.leaderboardPanel, "LeaderboardHeaderRow"),
 	}
 	for _, instance in ipairs(alternatePanels) do
 		registerThemeSurface(instance, "panelAlt")
 	end
 
 	local raisedPanels = {
-		findUi(matchScreen, "GuessPanel"),
-		currencyHud,
+		findUi(ui.matchScreen, "GuessPanel"),
+		ui.currencyHud,
 	}
 	for _, instance in ipairs(raisedPanels) do
-		registerThemeSurface(instance, if instance == currencyHud then "hud" else "panelRaised")
+		registerThemeSurface(instance, if instance == ui.currencyHud then "hud" else "panelRaised")
 	end
 
-	registerThemeSurface(findUi(matchScreen, "YourLockedCard"), "success")
+	registerThemeSurface(findUi(ui.matchScreen, "YourLockedCard"), "success")
 
 	for index = 1, 4 do
-		registerThemeSurface(findUi(shopPanel, "ShopItemRow" .. tostring(index)), "panelAlt")
+		registerThemeSurface(findUi(ui.shopPanel, "ShopItemRow" .. tostring(index)), "panelAlt")
 	end
 
 	for index = 1, 3 do
@@ -505,27 +512,27 @@ local function initializeUiThemeBindings()
 	end
 
 	for index = 1, 5 do
-		registerThemeSurface(findUi(rewardsPanel, "RewardWheelSegment" .. tostring(index)), "panelRaised")
+		registerThemeSurface(findUi(ui.rewardsPanel, "RewardWheelSegment" .. tostring(index)), "panelRaised")
 	end
 
 	for index = 1, 6 do
-		registerThemeSurface(findUi(leaderboardPanel, "LeaderboardRow" .. tostring(index)), "panelAlt")
+		registerThemeSurface(findUi(ui.leaderboardPanel, "LeaderboardRow" .. tostring(index)), "panelAlt")
 	end
 
 	local accentGroups = {
-		{ instance = findUi(menuScreen, "TitleLabel"), role = "accent" },
-		{ instance = findUi(lobbyScreen, "TitleLabel"), role = "accent" },
-		{ instance = findUi(matchScreen, "TitleLabel"), role = "accent" },
-		{ instance = findUi(resultScreen, "TitleLabel"), role = "accent" },
-		{ instance = background:FindFirstChild("TopHalo"), role = "primary" },
-		{ instance = background:FindFirstChild("BottomHalo"), role = "secondary" },
-		{ instance = findUi(menuScreen, "HeaderGlow"), role = "glow" },
-		{ instance = findUi(lobbyScreen, "HeaderGlow"), role = "glow" },
-		{ instance = findUi(matchScreen, "HeaderGlow"), role = "glow" },
-		{ instance = findUi(resultScreen, "HeaderGlow"), role = "glow" },
-		{ instance = playerOneRow:FindFirstChild("AccentBar"), role = "primary" },
-		{ instance = playerTwoRow:FindFirstChild("AccentBar"), role = "secondary" },
-		{ instance = findUi(matchScreen, "StatusRibbon"), role = "glow" },
+		{ instance = findUi(ui.menuScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(ui.lobbyScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(ui.matchScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(ui.resultScreen, "TitleLabel"), role = "accent" },
+		{ instance = ui.background:FindFirstChild("TopHalo"), role = "primary" },
+		{ instance = ui.background:FindFirstChild("BottomHalo"), role = "secondary" },
+		{ instance = findUi(ui.menuScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(ui.lobbyScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(ui.matchScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(ui.resultScreen, "HeaderGlow"), role = "glow" },
+		{ instance = ui.playerOneRow:FindFirstChild("AccentBar"), role = "primary" },
+		{ instance = ui.playerTwoRow:FindFirstChild("AccentBar"), role = "secondary" },
+		{ instance = findUi(ui.matchScreen, "StatusRibbon"), role = "glow" },
 	}
 	for _, entry in ipairs(accentGroups) do
 		if entry.instance then
@@ -534,43 +541,43 @@ local function initializeUiThemeBindings()
 	end
 
 	local staticTextGroups = {
-		{ instance = findUi(menuScreen, "SubtitleLabel"), role = "muted" },
-		{ instance = findUi(lobbyScreen, "SubtitleLabel"), role = "muted" },
-		{ instance = findUi(matchScreen, "SubtitleLabel"), role = "muted" },
-		{ instance = findUi(resultScreen, "SubtitleLabel"), role = "muted" },
-		{ instance = findUi(menuScreen, "MenuTagLabel"), role = "warning" },
-		{ instance = findUi(currencyHud, "CurrencyTitleLabel"), role = "muted" },
-		{ instance = currencyAmountLabel, role = "coin" },
-		{ instance = rewardAmountLabel, role = "coin" },
-		{ instance = resultRewardLabel, role = "coin" },
+		{ instance = findUi(ui.menuScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(ui.lobbyScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(ui.matchScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(ui.resultScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(ui.menuScreen, "MenuTagLabel"), role = "warning" },
+		{ instance = findUi(ui.currencyHud, "CurrencyTitleLabel"), role = "muted" },
+		{ instance = ui.currencyAmountLabel, role = "coin" },
+		{ instance = ui.rewardAmountLabel, role = "coin" },
+		{ instance = ui.resultRewardLabel, role = "coin" },
 	}
 	for _, entry in ipairs(staticTextGroups) do
 		registerThemeText(entry.instance, entry.role)
 	end
 
-	registerThemeOverlay(howToPlayPanel, 0.34)
-	registerThemeOverlay(shopPanel)
+	registerThemeOverlay(ui.howToPlayPanel, 0.34)
+	registerThemeOverlay(ui.shopPanel)
 	registerThemeOverlay(modeUi.coinPacksPanel)
-	registerThemeOverlay(rewardsPanel)
-	registerThemeOverlay(leaderboardPanel)
+	registerThemeOverlay(ui.rewardsPanel)
+	registerThemeOverlay(ui.leaderboardPanel)
 
-	registerThemeScrollFrame(guessHistoryFrame)
-	registerThemeInput(secretTextBox)
-	registerThemeInput(guessTextBox)
+	registerThemeScrollFrame(ui.guessHistoryFrame)
+	registerThemeInput(ui.secretTextBox)
+	registerThemeInput(ui.guessTextBox)
 
 	local secondaryButtons = {
-		menuBackButton,
-		howToPlayButton,
-		closeHowToPlayButton,
-		lobbyBackButton,
-		restartButton,
-		backToMenuButton,
-		closeShopButton,
+		ui.menuBackButton,
+		ui.howToPlayButton,
+		ui.closeHowToPlayButton,
+		ui.lobbyBackButton,
+		ui.restartButton,
+		ui.backToMenuButton,
+		ui.closeShopButton,
 		modeUi.openCoinPacksButton,
 		modeUi.buyCoinsHudButton,
 		modeUi.closeCoinPacksButton,
-		closeRewardsButton,
-		closeLeaderboardButton,
+		ui.closeRewardsButton,
+		ui.closeLeaderboardButton,
 	}
 	local secondaryLookup = {}
 	for _, button in ipairs(secondaryButtons) do
@@ -648,15 +655,15 @@ local function bindModeInput(textBox)
 end
 
 local function updateCurrencyHud(delta)
-	currencyAmountLabel.Text = tostring(currencyBalance)
+	ui.currencyAmountLabel.Text = tostring(currencyBalance)
 	lastCurrencyDelta = delta or lastCurrencyDelta or 0
-	currencyAmountLabel.TextColor3 = getUiTheme().text.coin
+	ui.currencyAmountLabel.TextColor3 = getUiTheme().text.coin
 
 	if lastCurrencyDelta > 0 then
-		currencyDeltaLabel.Text = "+" .. tostring(lastCurrencyDelta)
-		currencyDeltaLabel.TextColor3 = getUiTheme().text.success
+		ui.currencyDeltaLabel.Text = "+" .. tostring(lastCurrencyDelta)
+		ui.currencyDeltaLabel.TextColor3 = getUiTheme().text.success
 	else
-		currencyDeltaLabel.Text = ""
+		ui.currencyDeltaLabel.Text = ""
 	end
 end
 
@@ -666,9 +673,9 @@ local function getLocalCurrencyValue(state, key)
 end
 
 local function setCommercePanelsVisible(shopVisible, rewardsVisible, leaderboardVisible, coinPacksVisible)
-	shopPanel.Visible = shopVisible == true
-	rewardsPanel.Visible = rewardsVisible == true
-	leaderboardPanel.Visible = leaderboardVisible == true
+	ui.shopPanel.Visible = shopVisible == true
+	ui.rewardsPanel.Visible = rewardsVisible == true
+	ui.leaderboardPanel.Visible = leaderboardVisible == true
 	modeUi.coinPacksPanel.Visible = coinPacksVisible == true
 end
 
@@ -679,9 +686,9 @@ end
 local function updateShopPanel(shopState)
 	modeUi.latestShopState = shopState or modeUi.latestShopState
 	local state = modeUi.latestShopState
-	shopBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
+	ui.shopBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
 
-	shopStatusLabel.Text = (state and state.message) or "Select an item."
+	ui.shopStatusLabel.Text = (state and state.message) or "Select an item."
 
 	local catalog = state and state.catalog or {}
 	local ownedItems = state and state.ownedItems or {}
@@ -739,8 +746,8 @@ local function updateLeaderboardPanel(leaderboardState)
 	modeUi.latestLeaderboardState = leaderboardState or modeUi.latestLeaderboardState
 	local state = modeUi.latestLeaderboardState
 	local entries = state and state.entries or {}
-	leaderboardStatusLabel.Text = (state and state.message) or "Session leaderboard"
-	leaderboardEmptyLabel.Visible = #entries == 0
+	ui.leaderboardStatusLabel.Text = (state and state.message) or "Session leaderboard"
+	ui.leaderboardEmptyLabel.Visible = #entries == 0
 
 	for index, row in ipairs(modeUi.leaderboardRows) do
 		local entry = entries[index]
@@ -760,25 +767,25 @@ end
 local function updateRewardsPanel(rewardState)
 	modeUi.latestRewardState = rewardState or modeUi.latestRewardState
 	local state = modeUi.latestRewardState
-	rewardsBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
+	ui.rewardsBalanceLabel.Text = "Coins: " .. tostring((state and state.balance) or currencyBalance)
 	local claimAmount = (state and state.claimAmount) or 0
 	local canClaim = state == nil or state.canClaim == true
 	local claimed = state and state.claimed == true
-	rewardTitleLabel.Text = (state and state.title) or "Daily Coins"
-	rewardBodyLabel.Text = if canClaim
+	ui.rewardTitleLabel.Text = (state and state.title) or "Daily Coins"
+	ui.rewardBodyLabel.Text = if canClaim
 		then "Your daily coin reward is available now. Claiming updates your saved progression immediately."
 		else "Today's daily reward is already claimed. Come back after the next UTC reset."
-	rewardAmountLabel.Text = "+" .. tostring(claimAmount) .. " coins"
-	claimRewardButton.Text = if canClaim then "Claim Daily Reward" else "Claimed Today"
-	setButtonEnabled(claimRewardButton, canClaim)
+	ui.rewardAmountLabel.Text = "+" .. tostring(claimAmount) .. " coins"
+	ui.claimRewardButton.Text = if canClaim then "Claim Daily Reward" else "Claimed Today"
+	setButtonEnabled(ui.claimRewardButton, canClaim)
 	modeUi.rewardNextClaimLabel.Text = (state and state.nextClaimText) or "Ready now"
 	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then getUiTheme().text.success else getUiTheme().text.muted
-	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
-	rewardWheelBodyLabel.Text = (state and state.wheelStatus) or "Reward wheel coming next. Daily coins are live now."
+	ui.rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
+	ui.rewardWheelBodyLabel.Text = (state and state.wheelStatus) or "Prize wheel display is live in the lobby. Daily coins are available now."
 
 	local segments = state and state.wheelSegments or {}
 	for index = 1, 5 do
-		local segment = findUi(rewardsPanel, "RewardWheelSegment" .. tostring(index))
+		local segment = findUi(ui.rewardsPanel, "RewardWheelSegment" .. tostring(index))
 		local label = segment:FindFirstChild("RewardWheelSegmentLabel" .. tostring(index))
 		local rewardSegment = segments[index]
 		if label and label:IsA("TextLabel") then
@@ -798,7 +805,7 @@ local COSMETIC_INSTANCES = {
 	light = "FastGuesserCosmeticLight",
 }
 
-local function getEquippedForPlayer(player)
+getEquippedForPlayer = function(player)
 	local equippedByPlayerId = modeUi.latestCosmeticsState and modeUi.latestCosmeticsState.equippedByPlayerId or {}
 	local equippedItems = equippedByPlayerId[tostring(player.UserId)] or {}
 	if player ~= localPlayer then
@@ -925,8 +932,8 @@ local function setValidationMessage(label, message)
 end
 
 local function clearValidationMessages()
-	setValidationMessage(secretValidationLabel, "")
-	setValidationMessage(guessValidationLabel, "")
+	setValidationMessage(ui.secretValidationLabel, "")
+	setValidationMessage(ui.guessValidationLabel, "")
 end
 
 local function formatLockedPositions(lockedPositions)
@@ -1173,8 +1180,8 @@ applyUiTheme = function(equippedItems)
 	currentUiThemeId = if equippedItems.Theme == UI_THEME_IDS.Midnight then UI_THEME_IDS.Midnight else UI_THEME_IDS.Default
 
 	local theme = getUiTheme()
-	background.BackgroundColor3 = theme.background.start
-	local backgroundGradient = getGradient(background)
+	ui.background.BackgroundColor3 = theme.background.start
+	local backgroundGradient = getGradient(ui.background)
 	if backgroundGradient then
 		backgroundGradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, theme.background.start),
@@ -1330,8 +1337,8 @@ local function setPanelAccent(panel, enabled, activeColor)
 end
 
 local function setStatusChip(text, backgroundColor, strokeColor)
-	statusChipLabel.Text = text
-	updateCardVisual(statusChip, backgroundColor, strokeColor)
+	ui.statusChipLabel.Text = text
+	updateCardVisual(ui.statusChip, backgroundColor, strokeColor)
 end
 
 local function setStateLabel(label, text, isActive)
@@ -1370,8 +1377,8 @@ local function setMatchPresentationForMode()
 	modeUi.matchSubtitleLabel.Text = copy.matchSubtitle
 	modeUi.secretHelpLabel.Text = copy.secretHelp
 	modeUi.guessHelpLabel.Text = copy.guessHelp
-	secretTextBox.PlaceholderText = copy.secretPlaceholder
-	guessTextBox.PlaceholderText = copy.guessPlaceholder
+	ui.secretTextBox.PlaceholderText = copy.secretPlaceholder
+	ui.guessTextBox.PlaceholderText = copy.guessPlaceholder
 	modeUi.historyHintLabel.Text = copy.historyHint
 	modeUi.yourLockedCard.Visible = not higherLower
 	modeUi.opponentLockedCard.Visible = not higherLower
@@ -1400,55 +1407,55 @@ end
 local function setSecretControlsEnabled(enabled)
 	local theme = getUiTheme()
 	secretControlsEnabled = enabled
-	secretTextBox.TextEditable = enabled
-	secretTextBox.BackgroundColor3 = getColorAttribute(
-		secretTextBox,
+	ui.secretTextBox.TextEditable = enabled
+	ui.secretTextBox.BackgroundColor3 = getColorAttribute(
+		ui.secretTextBox,
 		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
 		if enabled then theme.input.enabledBackground else theme.input.disabledBackground
 	)
-	secretTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
-	secretTextBox.TextTransparency = if enabled then 0 else 0.15
-	local stroke = getStroke(secretTextBox)
+	ui.secretTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
+	ui.secretTextBox.TextTransparency = if enabled then 0 else 0.15
+	local stroke = getStroke(ui.secretTextBox)
 	if stroke then
 		stroke.Color = getColorAttribute(
-			secretTextBox,
+			ui.secretTextBox,
 			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
 			if enabled then theme.input.enabledStroke else theme.input.disabledStroke
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(secretPanel, enabled, getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel))
-	setButtonEnabled(submitSecretButton, enabled)
+	setPanelAccent(ui.secretPanel, enabled, getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel))
+	setButtonEnabled(ui.submitSecretButton, enabled)
 end
 
 local function setGuessControlsEnabled(enabled)
 	local theme = getUiTheme()
 	guessControlsEnabled = enabled
-	guessTextBox.TextEditable = enabled
-	guessTextBox.BackgroundColor3 = getColorAttribute(
-		guessTextBox,
+	ui.guessTextBox.TextEditable = enabled
+	ui.guessTextBox.BackgroundColor3 = getColorAttribute(
+		ui.guessTextBox,
 		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
 		if enabled then theme.input.enabledBackground else theme.input.disabledBackground
 	)
-	guessTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
-	guessTextBox.TextTransparency = if enabled then 0 else 0.15
-	local stroke = getStroke(guessTextBox)
+	ui.guessTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
+	ui.guessTextBox.TextTransparency = if enabled then 0 else 0.15
+	local stroke = getStroke(ui.guessTextBox)
 	if stroke then
 		stroke.Color = getColorAttribute(
-			guessTextBox,
+			ui.guessTextBox,
 			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
 			if enabled then theme.input.enabledStroke else theme.input.disabledStroke
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(guessPanel, enabled, getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel))
-	setButtonEnabled(submitGuessButton, enabled)
+	setPanelAccent(ui.guessPanel, enabled, getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel))
+	setButtonEnabled(ui.submitGuessButton, enabled)
 end
 
 local function setRestartControlsEnabled(enabled)
 	canRequestRematch = enabled
-	setButtonEnabled(restartButton, enabled)
-	setButtonEnabled(resultPlayAgainButton, enabled)
+	setButtonEnabled(ui.restartButton, enabled)
+	setButtonEnabled(ui.resultPlayAgainButton, enabled)
 end
 
 local function isMatchUiState(uiState)
@@ -1518,14 +1525,14 @@ local function getOpponentId(roundState)
 end
 
 local function clearGuessHistory()
-	for _, child in ipairs(guessHistoryFrame:GetChildren()) do
+	for _, child in ipairs(ui.guessHistoryFrame:GetChildren()) do
 		if child.Name == "GuessHistoryEntry" then
 			child:Destroy()
 		end
 	end
 
 	guessHistoryCount = 0
-	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, 0)
+	ui.guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, 0)
 end
 
 local function addGuessHistoryEntry(result)
@@ -1537,7 +1544,7 @@ local function addGuessHistoryEntry(result)
 	entry.Size = UDim2.new(1, -4, 0, 94)
 	entry.BackgroundColor3 = getSemanticThemeColor("historyEntry", COLORS.historyEntry)
 	entry.BorderSizePixel = 0
-	entry.Parent = guessHistoryFrame
+	entry.Parent = ui.guessHistoryFrame
 
 	updateCardVisual(
 		entry,
@@ -1593,28 +1600,28 @@ local function resetRoundUi()
 	setMatchPresentationForMode()
 	hasSubmittedSecret = false
 	isGameOver = false
-	secretTextBox.Text = ""
-	guessTextBox.Text = ""
-	gameOverLabel.Text = ""
+	ui.secretTextBox.Text = ""
+	ui.guessTextBox.Text = ""
+	ui.gameOverLabel.Text = ""
 	clearValidationMessages()
-	playerLockedLabel.Text = "Your code"
-	opponentLockedLabel.Text = "Their code"
-	turnLabel.Text = "Turn: waiting"
+	ui.playerLockedLabel.Text = "Your code"
+	ui.opponentLockedLabel.Text = "Their code"
+	ui.turnLabel.Text = "Turn: waiting"
 	setStatusChip(
 		"Waiting",
 		getSemanticThemeColor("historyEntry", COLORS.historyEntry),
 		getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
 	)
-	setStateLabel(secretStateLabel, "Waiting for round", false)
-	setStateLabel(guessStateLabel, "Waiting for turn", false)
+	setStateLabel(ui.secretStateLabel, "Waiting for round", false)
+	setStateLabel(ui.guessStateLabel, "Waiting for turn", false)
 	setDigitSlotValues(
-		playerLockedSlots,
+		ui.playerLockedSlots,
 		{},
 		getSemanticThemeColor("playerLockedFilled", Color3.fromRGB(52, 88, 72)),
 		getSemanticThemeColor("playerLockedEmpty", Color3.fromRGB(31, 48, 42))
 	)
 	setDigitSlotValues(
-		opponentLockedSlots,
+		ui.opponentLockedSlots,
 		{},
 		getSemanticThemeColor("opponentLockedFilled", Color3.fromRGB(49, 84, 126)),
 		getSemanticThemeColor("opponentLockedEmpty", Color3.fromRGB(33, 44, 58))
@@ -1635,16 +1642,16 @@ local function updateLockedLabels(roundState)
 	local opponentId = getOpponentId(roundState)
 	local lockedPositionsByPlayerId = roundState.lockedPositionsByPlayerId or {}
 
-	playerLockedLabel.Text = "Your code"
-	opponentLockedLabel.Text = "Their code"
+	ui.playerLockedLabel.Text = "Your code"
+	ui.opponentLockedLabel.Text = "Their code"
 	setDigitSlotValues(
-		playerLockedSlots,
+		ui.playerLockedSlots,
 		lockedPositionsByPlayerId[tostring(localPlayerId)] or {},
 		getSemanticThemeColor("playerLockedFilled", Color3.fromRGB(52, 88, 72)),
 		getSemanticThemeColor("playerLockedEmpty", Color3.fromRGB(31, 48, 42))
 	)
 	setDigitSlotValues(
-		opponentLockedSlots,
+		ui.opponentLockedSlots,
 		lockedPositionsByPlayerId[tostring(opponentId)] or {},
 		getSemanticThemeColor("opponentLockedFilled", Color3.fromRGB(49, 84, 126)),
 		getSemanticThemeColor("opponentLockedEmpty", Color3.fromRGB(33, 44, 58))
@@ -1652,11 +1659,11 @@ local function updateLockedLabels(roundState)
 end
 
 local function setScreen(screenState)
-	background.Visible = screenState ~= nil
-	menuScreen.Visible = screenState == SCREEN_STATES.Menu
-	lobbyScreen.Visible = screenState == SCREEN_STATES.Lobby
-	matchScreen.Visible = screenState == SCREEN_STATES.Match
-	resultScreen.Visible = screenState == SCREEN_STATES.Result
+	ui.background.Visible = screenState ~= nil
+	ui.menuScreen.Visible = screenState == SCREEN_STATES.Menu
+	ui.lobbyScreen.Visible = screenState == SCREEN_STATES.Lobby
+	ui.matchScreen.Visible = screenState == SCREEN_STATES.Match
+	ui.resultScreen.Visible = screenState == SCREEN_STATES.Result
 
 	if screenState ~= SCREEN_STATES.Match then
 		setSecretControlsEnabled(false)
@@ -1729,12 +1736,12 @@ end
 
 local function updateLobby(lobbyState)
 	if not lobbyState then
-		lobbyStatusLabel.Text = "Waiting for opponent"
-		updateLobbyPlayerCard(playerOneRow, playerOneReadyPill, playerOneSlotLabel, playerOneReadyLabel, 1, nil, false)
-		updateLobbyPlayerCard(playerTwoRow, playerTwoReadyPill, playerTwoSlotLabel, playerTwoReadyLabel, 2, nil, false)
+		ui.lobbyStatusLabel.Text = "Waiting for opponent"
+		updateLobbyPlayerCard(ui.playerOneRow, ui.playerOneReadyPill, ui.playerOneSlotLabel, ui.playerOneReadyLabel, 1, nil, false)
+		updateLobbyPlayerCard(ui.playerTwoRow, ui.playerTwoReadyPill, ui.playerTwoSlotLabel, ui.playerTwoReadyLabel, 2, nil, false)
 		readyControlsEnabled = true
-		setButtonEnabled(readyButton, true)
-		readyButton.Text = "Ready"
+		setButtonEnabled(ui.readyButton, true)
+		ui.readyButton.Text = "Ready"
 		return
 	end
 
@@ -1746,19 +1753,19 @@ local function updateLobby(lobbyState)
 	local canToggleReady = lobbyState.gameState == GAME_STATES.WaitingForPlayers and isInLobby
 
 	updateLobbyPlayerCard(
-		playerOneRow,
-		playerOneReadyPill,
-		playerOneSlotLabel,
-		playerOneReadyLabel,
+		ui.playerOneRow,
+		ui.playerOneReadyPill,
+		ui.playerOneSlotLabel,
+		ui.playerOneReadyLabel,
 		1,
 		lobbyState.playerOneId,
 		playerOneReady
 	)
 	updateLobbyPlayerCard(
-		playerTwoRow,
-		playerTwoReadyPill,
-		playerTwoSlotLabel,
-		playerTwoReadyLabel,
+		ui.playerTwoRow,
+		ui.playerTwoReadyPill,
+		ui.playerTwoSlotLabel,
+		ui.playerTwoReadyLabel,
 		2,
 		lobbyState.playerTwoId,
 		playerTwoReady
@@ -1766,30 +1773,30 @@ local function updateLobby(lobbyState)
 
 	local sessionNotice = getSessionNotice(lobbyState)
 	if sessionNotice then
-		lobbyStatusLabel.Text = sessionNotice
+		ui.lobbyStatusLabel.Text = sessionNotice
 	elseif not hasBothPlayers then
-		lobbyStatusLabel.Text = "Waiting for opponent"
+		ui.lobbyStatusLabel.Text = "Waiting for opponent"
 	elseif localReady and not (playerOneReady and playerTwoReady) then
-		lobbyStatusLabel.Text = "Waiting for opponent to ready"
+		ui.lobbyStatusLabel.Text = "Waiting for opponent to ready"
 	else
-		lobbyStatusLabel.Text = "Ready up"
+		ui.lobbyStatusLabel.Text = "Ready up"
 	end
 
 	readyControlsEnabled = canToggleReady
-	setButtonEnabled(readyButton, canToggleReady)
-	readyButton.Text = if localReady then "Unready" else "Ready"
+	setButtonEnabled(ui.readyButton, canToggleReady)
+	ui.readyButton.Text = if localReady then "Unready" else "Ready"
 end
 
 local function updateResult(roundState)
 	if not roundState then
-		resultWinnerLabel.Text = "Winner: -"
-		resultSubtitleLabel.Text = "Round complete."
-		resultStatusLabel.Text = ""
-		resultRewardLabel.Text = ""
+		ui.resultWinnerLabel.Text = "Winner: -"
+		ui.resultSubtitleLabel.Text = "Round complete."
+		ui.resultStatusLabel.Text = ""
+		ui.resultRewardLabel.Text = ""
 		modeUi.resultYourSecretLabel.Text = "Your secret: -"
 		modeUi.resultOpponentSecretLabel.Text = "Opponent secret: -"
 		updateCardVisual(
-			resultWinnerCard,
+			ui.resultWinnerCard,
 			getSemanticThemeColor("historyEntry", COLORS.historyEntry),
 			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
 		)
@@ -1800,34 +1807,34 @@ local function updateResult(roundState)
 	local copy = getModeCopy()
 	local winnerId = roundState.winner
 	if roundState.isTie or winnerId == TIE_WINNER then
-		resultWinnerLabel.Text = "Result: Tie"
-		resultSubtitleLabel.Text = copy.tieSubtitle
+		ui.resultWinnerLabel.Text = "Result: Tie"
+		ui.resultSubtitleLabel.Text = copy.tieSubtitle
 		updateCardVisual(
-			resultWinnerCard,
+			ui.resultWinnerCard,
 			getSemanticThemeColor("resultTie", COLORS.resultTie),
 			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
 		)
 	elseif winnerId == localPlayer.UserId then
-		resultWinnerLabel.Text = "Winner: You"
-		resultSubtitleLabel.Text = copy.youWonSubtitle
+		ui.resultWinnerLabel.Text = "Winner: You"
+		ui.resultSubtitleLabel.Text = copy.youWonSubtitle
 		updateCardVisual(
-			resultWinnerCard,
+			ui.resultWinnerCard,
 			getSemanticThemeColor("resultWin", COLORS.resultWin),
 			getSemanticThemeColor("readyPillBorder", COLORS.readyPillBorder)
 		)
 	elseif winnerId then
-		resultWinnerLabel.Text = "Winner: Opponent"
-		resultSubtitleLabel.Text = copy.opponentWonSubtitle
+		ui.resultWinnerLabel.Text = "Winner: Opponent"
+		ui.resultSubtitleLabel.Text = copy.opponentWonSubtitle
 		updateCardVisual(
-			resultWinnerCard,
+			ui.resultWinnerCard,
 			getSemanticThemeColor("resultLoss", COLORS.resultLoss),
 			getSemanticThemeColor("resultLossBorder", Color3.fromRGB(208, 122, 122))
 		)
 	else
-		resultWinnerLabel.Text = "Winner: -"
-		resultSubtitleLabel.Text = "Round complete."
+		ui.resultWinnerLabel.Text = "Winner: -"
+		ui.resultSubtitleLabel.Text = "Round complete."
 		updateCardVisual(
-			resultWinnerCard,
+			ui.resultWinnerCard,
 			getSemanticThemeColor("historyEntry", COLORS.historyEntry),
 			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
 		)
@@ -1839,21 +1846,21 @@ local function updateResult(roundState)
 	modeUi.resultOpponentSecretLabel.Text = "Opponent secret: " .. tostring(finalSecretsByPlayerId[tostring(opponentId)] or "-")
 
 	local reward = getLocalCurrencyValue(roundState, "latestRewardByPlayerId")
-	resultRewardLabel.Text = if reward and reward > 0 then "+" .. tostring(reward) .. " coins earned" else ""
+	ui.resultRewardLabel.Text = if reward and reward > 0 then "+" .. tostring(reward) .. " coins earned" else ""
 
 	local localReadyForRematch = getRematchReady(roundState, localPlayer.UserId)
 	local sessionNotice = getSessionNotice(roundState)
 	if sessionNotice then
-		resultStatusLabel.Text = sessionNotice
+		ui.resultStatusLabel.Text = sessionNotice
 		setRestartControlsEnabled(false)
 	elseif roundState.gameState == GAME_STATES.WaitingForRematch and localReadyForRematch then
-		resultStatusLabel.Text = "Waiting for opponent to play again"
+		ui.resultStatusLabel.Text = "Waiting for opponent to play again"
 		setRestartControlsEnabled(false)
 	elseif roundState.gameState == GAME_STATES.WaitingForRematch then
-		resultStatusLabel.Text = "Opponent wants to play again"
+		ui.resultStatusLabel.Text = "Opponent wants to play again"
 		setRestartControlsEnabled(true)
 	else
-		resultStatusLabel.Text = "Game over"
+		ui.resultStatusLabel.Text = "Game over"
 		setRestartControlsEnabled(winnerId ~= nil)
 	end
 end
@@ -1901,7 +1908,7 @@ local function getRoundUiState(roundState)
 end
 
 local function updateMatchForUiState(uiState, roundState)
-	gameOverLabel.Text = ""
+	ui.gameOverLabel.Text = ""
 	setRestartControlsEnabled(false)
 
 	if roundState then
@@ -1910,54 +1917,54 @@ local function updateMatchForUiState(uiState, roundState)
 
 	if uiState == UI_STATES.EnteringSecret then
 		local copy = getModeCopy()
-		statusLabel.Text = copy.enterSecretStatus
-		turnLabel.Text = "Turn: waiting"
+		ui.statusLabel.Text = copy.enterSecretStatus
+		ui.turnLabel.Text = "Turn: waiting"
 		setStatusChip(
 			"Secret phase",
 			getSemanticThemeColor("phaseSecret", COLORS.phaseSecret),
 			getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel)
 		)
-		setStateLabel(secretStateLabel, copy.secretActiveState, true)
-		setStateLabel(guessStateLabel, copy.guessLockedState, false)
+		setStateLabel(ui.secretStateLabel, copy.secretActiveState, true)
+		setStateLabel(ui.guessStateLabel, copy.guessLockedState, false)
 		setSecretControlsEnabled(canSubmitSecret(roundState) == true)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.WaitingForOpponentSecret then
 		local copy = getModeCopy()
-		statusLabel.Text = copy.waitingSecretStatus
-		turnLabel.Text = "Turn: waiting"
+		ui.statusLabel.Text = copy.waitingSecretStatus
+		ui.turnLabel.Text = "Turn: waiting"
 		setStatusChip(
 			"Secret phase",
 			getSemanticThemeColor("phaseSecret", COLORS.phaseSecret),
 			getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel)
 		)
-		setStateLabel(secretStateLabel, copy.secretSavedState, false)
-		setStateLabel(guessStateLabel, copy.guessWaitingState, false)
+		setStateLabel(ui.secretStateLabel, copy.secretSavedState, false)
+		setStateLabel(ui.guessStateLabel, copy.guessWaitingState, false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	elseif uiState == UI_STATES.InTurn then
 		local copy = getModeCopy()
-		statusLabel.Text = "Your turn"
-		turnLabel.Text = "Turn: you"
+		ui.statusLabel.Text = "Your turn"
+		ui.turnLabel.Text = "Turn: you"
 		setStatusChip(
 			"Guess phase",
 			getSemanticThemeColor("phaseGuess", COLORS.phaseGuess),
 			getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel)
 		)
-		setStateLabel(secretStateLabel, copy.secretLockedState, false)
-		setStateLabel(guessStateLabel, copy.guessActiveState, true)
+		setStateLabel(ui.secretStateLabel, copy.secretLockedState, false)
+		setStateLabel(ui.guessStateLabel, copy.guessActiveState, true)
 		setSecretControlsEnabled(false)
 		refreshGuessControls()
 	elseif uiState == UI_STATES.OpponentTurn then
 		local copy = getModeCopy()
-		statusLabel.Text = "Opponent's turn"
-		turnLabel.Text = if roundState and roundState.currentTurn then "Turn: opponent" else "Turn: waiting"
+		ui.statusLabel.Text = "Opponent's turn"
+		ui.turnLabel.Text = if roundState and roundState.currentTurn then "Turn: opponent" else "Turn: waiting"
 		setStatusChip(
 			"Guess phase",
 			getSemanticThemeColor("phaseGuess", COLORS.phaseGuess),
 			getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel)
 		)
-		setStateLabel(secretStateLabel, copy.secretLockedState, false)
-		setStateLabel(guessStateLabel, copy.guessOpponentState, false)
+		setStateLabel(ui.secretStateLabel, copy.secretLockedState, false)
+		setStateLabel(ui.guessStateLabel, copy.guessOpponentState, false)
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 	end
@@ -1968,7 +1975,7 @@ local function renderUi()
 	setScreen(screenState)
 
 	if currentUiState == UI_STATES.LobbyWorld then
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		resetRoundUi()
 	elseif currentUiState == UI_STATES.Menu then
 		setMenuPresentationForMode()
@@ -1976,16 +1983,16 @@ local function renderUi()
 		updateLobby(latestLobbyState)
 	elseif currentUiState == UI_STATES.ReadyUp then
 		setCommercePanelsVisible(false, false)
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		updateLobby(latestLobbyState)
 		resetRoundUi()
 	elseif isMatchUiState(currentUiState) then
 		setCommercePanelsVisible(false, false)
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		updateMatchForUiState(currentUiState, latestRoundState)
 	elseif currentUiState == UI_STATES.GameOver then
 		setCommercePanelsVisible(false, false)
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		setSecretControlsEnabled(false)
 		setGuessControlsEnabled(false)
 		updateResult(latestRoundState)
@@ -2063,8 +2070,8 @@ local function onTurnChanged(playerId)
 end
 
 local function onGuessResult(result)
-	statusLabel.Text = "Guess submitted"
-	setValidationMessage(guessValidationLabel, "")
+	ui.statusLabel.Text = "Guess submitted"
+	setValidationMessage(ui.guessValidationLabel, "")
 	addGuessHistoryEntry(result)
 	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
@@ -2119,7 +2126,7 @@ local function onCurrencyChanged(payload)
 end
 
 local function onShopOpened(shopState)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	setCommercePanelsVisible(true, false)
 	updateShopPanel(shopState)
 end
@@ -2129,7 +2136,7 @@ local function onShopStateChanged(shopState)
 end
 
 local function onCoinPacksOpened(coinPackState)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	setCommercePanelsVisible(false, false, false, true)
 	updateCoinPacksPanel(coinPackState)
 end
@@ -2139,7 +2146,7 @@ local function onCoinPackStateChanged(coinPackState)
 end
 
 local function onRewardsOpened(rewardState)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	setCommercePanelsVisible(false, true)
 	updateRewardsPanel(rewardState)
 end
@@ -2149,7 +2156,7 @@ local function onRewardStateChanged(rewardState)
 end
 
 local function onLeaderboardOpened(leaderboardState)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	setCommercePanelsVisible(false, false, true)
 	updateLeaderboardPanel(leaderboardState)
 end
@@ -2160,8 +2167,8 @@ end
 
 local function onModeStateChanged(modeState)
 	modeUi.latestModeState = modeState or modeUi.latestModeState
-	secretTextBox.Text = clampModeInput(secretTextBox.Text)
-	guessTextBox.Text = clampModeInput(guessTextBox.Text)
+	ui.secretTextBox.Text = clampModeInput(ui.secretTextBox.Text)
+	ui.guessTextBox.Text = clampModeInput(ui.guessTextBox.Text)
 	setMenuPresentationForMode()
 	setMatchPresentationForMode()
 	clearValidationMessages()
@@ -2188,15 +2195,15 @@ local function onLobbyFlowStateChanged(flowState)
 	end
 end
 
-secretTextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	if isValidModeInput(secretTextBox.Text) then
-		setValidationMessage(secretValidationLabel, "")
+ui.secretTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+	if isValidModeInput(ui.secretTextBox.Text) then
+		setValidationMessage(ui.secretValidationLabel, "")
 	end
 end)
 
-guessTextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	if isValidModeInput(guessTextBox.Text) then
-		setValidationMessage(guessValidationLabel, "")
+ui.guessTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+	if isValidModeInput(ui.guessTextBox.Text) then
+		setValidationMessage(ui.guessValidationLabel, "")
 	end
 end)
 
@@ -2205,16 +2212,16 @@ local function submitSecret()
 		return
 	end
 
-	local secret = secretTextBox.Text
+	local secret = ui.secretTextBox.Text
 	if not isValidModeInput(secret) then
-		setValidationMessage(secretValidationLabel, getModeInputError())
+		setValidationMessage(ui.secretValidationLabel, getModeInputError())
 		return
 	end
 
 	hasSubmittedSecret = true
 	setSecretControlsEnabled(false)
-	secretTextBox.Text = ""
-	setValidationMessage(secretValidationLabel, "")
+	ui.secretTextBox.Text = ""
+	setValidationMessage(ui.secretValidationLabel, "")
 	RemoteEvents.SecretSubmitted:FireServer(secret)
 	setUiState(UI_STATES.WaitingForOpponentSecret)
 end
@@ -2224,16 +2231,16 @@ local function submitGuess()
 		return
 	end
 
-	local guess = guessTextBox.Text
+	local guess = ui.guessTextBox.Text
 	if not isValidModeInput(guess) then
-		setValidationMessage(guessValidationLabel, getModeInputError())
+		setValidationMessage(ui.guessValidationLabel, getModeInputError())
 		return
 	end
 
-	statusLabel.Text = "Submitting guess..."
+	ui.statusLabel.Text = "Submitting guess..."
 	setGuessControlsEnabled(false)
-	guessTextBox.Text = ""
-	setValidationMessage(guessValidationLabel, "")
+	ui.guessTextBox.Text = ""
+	setValidationMessage(ui.guessValidationLabel, "")
 	RemoteEvents.GuessSubmitted:FireServer(guess)
 end
 
@@ -2242,8 +2249,8 @@ local function requestRestart()
 		return
 	end
 
-	resultStatusLabel.Text = "Waiting for opponent to play again"
-	statusLabel.Text = "Waiting for rematch"
+	ui.resultStatusLabel.Text = "Waiting for opponent to play again"
+	ui.statusLabel.Text = "Waiting for rematch"
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
 	setRestartControlsEnabled(false)
@@ -2258,33 +2265,33 @@ local function onLobbyPromptTriggered(prompt)
 	local modeId = prompt:GetAttribute("ModeId")
 	if modeId then
 		setCommercePanelsVisible(false, false, false, false)
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		RemoteEvents.PlayModeRequested:FireServer(modeId)
 	elseif prompt.Name == "ShopPrompt" then
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		RemoteEvents.ShopOpenRequested:FireServer()
 	elseif prompt.Name == "RewardsPrompt" then
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		RemoteEvents.RewardsOpenRequested:FireServer()
 	elseif prompt.Name == "LeaderboardPrompt" then
-		howToPlayPanel.Visible = false
+		ui.howToPlayPanel.Visible = false
 		RemoteEvents.LeaderboardOpenRequested:FireServer()
 	end
 end
 
-guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, guessHistoryList.AbsoluteContentSize.Y + 12)
+ui.guessHistoryList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	ui.guessHistoryFrame.CanvasSize = UDim2.fromOffset(0, ui.guessHistoryList.AbsoluteContentSize.Y + 12)
 end)
 
 for index = 1, 4 do
 	modeUi.shopRows[index] = {
-		frame = findUi(shopPanel, "ShopItemRow" .. tostring(index)),
-		name = findUi(shopPanel, "ShopItemNameLabel" .. tostring(index)),
-		meta = findUi(shopPanel, "ShopItemMetaLabel" .. tostring(index)),
-		price = findUi(shopPanel, "ShopItemPriceLabel" .. tostring(index)),
-		state = findUi(shopPanel, "ShopItemStateLabel" .. tostring(index)),
-		buyButton = findUi(shopPanel, "ShopBuyButton" .. tostring(index)),
-		equipButton = findUi(shopPanel, "ShopEquipButton" .. tostring(index)),
+		frame = findUi(ui.shopPanel, "ShopItemRow" .. tostring(index)),
+		name = findUi(ui.shopPanel, "ShopItemNameLabel" .. tostring(index)),
+		meta = findUi(ui.shopPanel, "ShopItemMetaLabel" .. tostring(index)),
+		price = findUi(ui.shopPanel, "ShopItemPriceLabel" .. tostring(index)),
+		state = findUi(ui.shopPanel, "ShopItemStateLabel" .. tostring(index)),
+		buyButton = findUi(ui.shopPanel, "ShopBuyButton" .. tostring(index)),
+		equipButton = findUi(ui.shopPanel, "ShopEquipButton" .. tostring(index)),
 	}
 end
 
@@ -2301,12 +2308,12 @@ end
 
 for index = 1, 6 do
 	modeUi.leaderboardRows[index] = {
-		frame = findUi(leaderboardPanel, "LeaderboardRow" .. tostring(index)),
-		rank = findUi(leaderboardPanel, "LeaderboardRankLabel" .. tostring(index)),
-		name = findUi(leaderboardPanel, "LeaderboardNameLabel" .. tostring(index)),
-		wins = findUi(leaderboardPanel, "LeaderboardWinsLabel" .. tostring(index)),
-		streak = findUi(leaderboardPanel, "LeaderboardStreakLabel" .. tostring(index)),
-		coins = findUi(leaderboardPanel, "LeaderboardCoinsLabel" .. tostring(index)),
+		frame = findUi(ui.leaderboardPanel, "LeaderboardRow" .. tostring(index)),
+		rank = findUi(ui.leaderboardPanel, "LeaderboardRankLabel" .. tostring(index)),
+		name = findUi(ui.leaderboardPanel, "LeaderboardNameLabel" .. tostring(index)),
+		wins = findUi(ui.leaderboardPanel, "LeaderboardWinsLabel" .. tostring(index)),
+		streak = findUi(ui.leaderboardPanel, "LeaderboardStreakLabel" .. tostring(index)),
+		coins = findUi(ui.leaderboardPanel, "LeaderboardCoinsLabel" .. tostring(index)),
 	}
 end
 
@@ -2322,35 +2329,35 @@ setSecretControlsEnabled(false)
 setGuessControlsEnabled(false)
 setRestartControlsEnabled(false)
 updateCurrencyHud(0)
-bindModeInput(secretTextBox)
-bindModeInput(guessTextBox)
+bindModeInput(ui.secretTextBox)
+bindModeInput(ui.guessTextBox)
 setUiState(UI_STATES.LobbyWorld)
 
-playButton.MouseButton1Click:Connect(function()
+ui.playButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	RemoteEvents.LobbyEntered:FireServer()
 	setUiState(UI_STATES.ReadyUp)
 end)
 
-menuBackButton.MouseButton1Click:Connect(function()
+ui.menuBackButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false, false)
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	clearValidationMessages()
 	resetRoundUi()
 	setUiState(UI_STATES.LobbyWorld)
 end)
 
-howToPlayButton.MouseButton1Click:Connect(function()
+ui.howToPlayButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false)
-	howToPlayPanel.Visible = not howToPlayPanel.Visible
+	ui.howToPlayPanel.Visible = not ui.howToPlayPanel.Visible
 end)
 
-closeHowToPlayButton.MouseButton1Click:Connect(function()
-	howToPlayPanel.Visible = false
+ui.closeHowToPlayButton.MouseButton1Click:Connect(function()
+	ui.howToPlayPanel.Visible = false
 end)
 
-closeShopButton.MouseButton1Click:Connect(function()
+ui.closeShopButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false)
 end)
 
@@ -2361,7 +2368,7 @@ modeUi.openCoinPacksButton.MouseButton1Click:Connect(function()
 end)
 
 modeUi.buyCoinsHudButton.MouseButton1Click:Connect(function()
-	howToPlayPanel.Visible = false
+	ui.howToPlayPanel.Visible = false
 	setCommercePanelsVisible(false, false, false, true)
 	updateCoinPacksPanel()
 	RemoteEvents.CoinPacksOpenRequested:FireServer()
@@ -2371,11 +2378,11 @@ modeUi.closeCoinPacksButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false, false)
 end)
 
-closeRewardsButton.MouseButton1Click:Connect(function()
+ui.closeRewardsButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false)
 end)
 
-closeLeaderboardButton.MouseButton1Click:Connect(function()
+ui.closeLeaderboardButton.MouseButton1Click:Connect(function()
 	setCommercePanelsVisible(false, false, false)
 end)
 
@@ -2383,14 +2390,14 @@ for _, row in ipairs(modeUi.shopRows) do
 	row.buyButton.MouseButton1Click:Connect(function()
 		local itemId = row.frame:GetAttribute("ItemId")
 		if itemId then
-			shopStatusLabel.Text = "Buying..."
+			ui.shopStatusLabel.Text = "Buying..."
 			RemoteEvents.ShopPurchaseRequested:FireServer(itemId)
 		end
 	end)
 	row.equipButton.MouseButton1Click:Connect(function()
 		local itemId = row.frame:GetAttribute("ItemId")
 		if itemId then
-			shopStatusLabel.Text = "Equipping..."
+			ui.shopStatusLabel.Text = "Equipping..."
 			RemoteEvents.ShopEquipRequested:FireServer(itemId)
 		end
 	end)
@@ -2407,22 +2414,22 @@ for _, row in ipairs(modeUi.coinPackRows) do
 	end)
 end
 
-claimRewardButton.MouseButton1Click:Connect(function()
-	rewardsStatusLabel.Text = "Claiming..."
-	setButtonEnabled(claimRewardButton, false)
+ui.claimRewardButton.MouseButton1Click:Connect(function()
+	ui.rewardsStatusLabel.Text = "Claiming..."
+	setButtonEnabled(ui.claimRewardButton, false)
 	RemoteEvents.RewardClaimRequested:FireServer()
 end)
 
-lobbyBackButton.MouseButton1Click:Connect(function()
+ui.lobbyBackButton.MouseButton1Click:Connect(function()
 	RemoteEvents.LobbyLeft:FireServer()
 	setUiState(UI_STATES.LobbyWorld)
 end)
-backToMenuButton.MouseButton1Click:Connect(function()
+ui.backToMenuButton.MouseButton1Click:Connect(function()
 	RemoteEvents.LobbyLeft:FireServer()
 	setUiState(UI_STATES.LobbyWorld)
 end)
 
-readyButton.MouseButton1Click:Connect(function()
+ui.readyButton.MouseButton1Click:Connect(function()
 	if not readyControlsEnabled then
 		return
 	end
@@ -2430,13 +2437,13 @@ readyButton.MouseButton1Click:Connect(function()
 	local isReady = latestLobbyState and getPlayerReady(latestLobbyState, localPlayer.UserId) or false
 	RemoteEvents.ReadyChanged:FireServer(not isReady)
 	readyControlsEnabled = false
-	setButtonEnabled(readyButton, false)
+	setButtonEnabled(ui.readyButton, false)
 end)
 
-submitSecretButton.MouseButton1Click:Connect(submitSecret)
-submitGuessButton.MouseButton1Click:Connect(submitGuess)
-restartButton.MouseButton1Click:Connect(requestRestart)
-resultPlayAgainButton.MouseButton1Click:Connect(requestRestart)
+ui.submitSecretButton.MouseButton1Click:Connect(submitSecret)
+ui.submitGuessButton.MouseButton1Click:Connect(submitGuess)
+ui.restartButton.MouseButton1Click:Connect(requestRestart)
+ui.resultPlayAgainButton.MouseButton1Click:Connect(requestRestart)
 modeUi.promptService.PromptTriggered:Connect(onLobbyPromptTriggered)
 
 RemoteEvents.SecretRequested.OnClientEvent:Connect(onSecretRequested)

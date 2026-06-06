@@ -322,7 +322,7 @@ local function buildRewardState(player, message)
 			else formatTimeRemaining(secondsUntilNextClaim),
 		wheelSegments = REWARD_WHEEL_SEGMENTS,
 		wheelEnabled = false,
-		wheelStatus = "Reward wheel coming next. Daily coins are live now.",
+		wheelStatus = "Prize wheel display is live in the lobby. Daily coins are available now.",
 		message = message,
 	}
 end
