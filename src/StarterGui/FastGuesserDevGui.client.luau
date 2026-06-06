@@ -82,6 +82,210 @@ local COLORS = {
 	resultTie = Color3.fromRGB(89, 73, 41),
 }
 
+local UI_THEME_IDS = {
+	Default = "default",
+	Midnight = "theme_midnight",
+}
+
+local UI_THEMES = {
+	[UI_THEME_IDS.Default] = {
+		background = {
+			start = Color3.fromRGB(8, 13, 22),
+			finish = Color3.fromRGB(14, 22, 34),
+		},
+		surfaces = {
+			shell = { background = Color3.fromRGB(20, 29, 43), gradient = Color3.fromRGB(25, 35, 50), stroke = Color3.fromRGB(58, 77, 101), strokeTransparency = 0.08 },
+			panel = { background = Color3.fromRGB(32, 44, 60), gradient = Color3.fromRGB(24, 34, 48), stroke = Color3.fromRGB(58, 77, 101), strokeTransparency = 0.15 },
+			panelAlt = { background = Color3.fromRGB(24, 34, 48), gradient = Color3.fromRGB(24, 34, 46), stroke = Color3.fromRGB(58, 77, 101), strokeTransparency = 0.15 },
+			panelStrong = { background = Color3.fromRGB(39, 54, 74), gradient = Color3.fromRGB(24, 34, 48), stroke = Color3.fromRGB(85, 108, 136), strokeTransparency = 0.12 },
+			panelRaised = { background = Color3.fromRGB(49, 68, 92), gradient = Color3.fromRGB(24, 34, 48), stroke = Color3.fromRGB(85, 108, 136), strokeTransparency = 0.12 },
+			success = { background = Color3.fromRGB(37, 116, 78), gradient = Color3.fromRGB(24, 80, 58), stroke = Color3.fromRGB(84, 207, 144), strokeTransparency = 0.12 },
+			hud = { background = Color3.fromRGB(39, 54, 74), gradient = Color3.fromRGB(24, 34, 48), stroke = Color3.fromRGB(255, 211, 105), strokeTransparency = 0.14 },
+		},
+		buttons = {
+			Primary = {
+				background = Color3.fromRGB(78, 149, 245),
+				hover = Color3.fromRGB(98, 169, 255),
+				pressed = Color3.fromRGB(60, 121, 210),
+				disabled = Color3.fromRGB(70, 81, 95),
+				text = Color3.fromRGB(241, 246, 255),
+				disabledText = Color3.fromRGB(148, 159, 174),
+				stroke = Color3.fromRGB(85, 162, 255),
+			},
+			Secondary = {
+				background = Color3.fromRGB(49, 68, 92),
+				hover = Color3.fromRGB(63, 86, 114),
+				pressed = Color3.fromRGB(51, 70, 94),
+				disabled = Color3.fromRGB(70, 81, 95),
+				text = Color3.fromRGB(241, 246, 255),
+				disabledText = Color3.fromRGB(148, 159, 174),
+				stroke = Color3.fromRGB(85, 108, 136),
+			},
+		},
+		input = {
+			enabledBackground = Color3.fromRGB(248, 250, 252),
+			disabledBackground = Color3.fromRGB(198, 204, 212),
+			enabledStroke = Color3.fromRGB(44, 94, 162),
+			disabledStroke = Color3.fromRGB(78, 86, 96),
+			text = Color3.fromRGB(18, 25, 36),
+			disabledText = Color3.fromRGB(116, 126, 140),
+		},
+		text = {
+			default = Color3.fromRGB(241, 246, 255),
+			muted = Color3.fromRGB(166, 183, 205),
+			accent = Color3.fromRGB(85, 162, 255),
+			warning = Color3.fromRGB(240, 193, 100),
+			coin = Color3.fromRGB(255, 211, 105),
+			success = Color3.fromRGB(83, 190, 132),
+		},
+		accents = {
+			primary = Color3.fromRGB(85, 162, 255),
+			secondary = Color3.fromRGB(84, 207, 144),
+			glowStart = Color3.fromRGB(85, 162, 255),
+			glowFinish = Color3.fromRGB(84, 207, 144),
+		},
+		overlay = {
+			color = Color3.fromRGB(0, 0, 0),
+			transparency = 0.34,
+		},
+		scrollBar = Color3.fromRGB(85, 162, 255),
+		strokeTint = Color3.fromRGB(85, 162, 255),
+		successTint = Color3.fromRGB(83, 190, 132),
+		semantic = {
+			historyEntry = COLORS.historyEntry,
+			historyEntryAlt = COLORS.historyEntryAlt,
+			historyEntryBorder = COLORS.historyEntryBorder,
+			localCard = COLORS.localCard,
+			localCardBorder = COLORS.localCardBorder,
+			opponentCard = COLORS.opponentCard,
+			opponentCardBorder = COLORS.opponentCardBorder,
+			waitingCard = COLORS.waitingCard,
+			waitingCardBorder = COLORS.waitingCardBorder,
+			readyPill = COLORS.readyPill,
+			readyPillBorder = COLORS.readyPillBorder,
+			idlePill = COLORS.idlePill,
+			idlePillBorder = COLORS.idlePillBorder,
+			activePanel = COLORS.activePanel,
+			idlePanel = COLORS.idlePanel,
+			activeSecretPanel = COLORS.activeSecretPanel,
+			activeGuessPanel = COLORS.activeGuessPanel,
+			phaseSecret = COLORS.phaseSecret,
+			phaseGuess = COLORS.phaseGuess,
+			resultWin = COLORS.resultWin,
+			resultLoss = COLORS.resultLoss,
+			resultTie = COLORS.resultTie,
+			playerLockedFilled = Color3.fromRGB(52, 88, 72),
+			playerLockedEmpty = Color3.fromRGB(31, 48, 42),
+			opponentLockedFilled = Color3.fromRGB(49, 84, 126),
+			opponentLockedEmpty = Color3.fromRGB(33, 44, 58),
+			resultLossBorder = Color3.fromRGB(208, 122, 122),
+		},
+	}
+}
+
+UI_THEMES[UI_THEME_IDS.Midnight] = {
+	background = {
+		start = Color3.fromRGB(4, 6, 18),
+		finish = Color3.fromRGB(28, 16, 54),
+	},
+	surfaces = {
+		shell = { background = Color3.fromRGB(12, 11, 34), gradient = Color3.fromRGB(27, 17, 62), stroke = Color3.fromRGB(142, 113, 255), strokeTransparency = 0 },
+		panel = { background = Color3.fromRGB(17, 17, 44), gradient = Color3.fromRGB(10, 11, 32), stroke = Color3.fromRGB(120, 95, 226), strokeTransparency = 0.03 },
+		panelAlt = { background = Color3.fromRGB(13, 14, 38), gradient = Color3.fromRGB(9, 10, 28), stroke = Color3.fromRGB(97, 80, 191), strokeTransparency = 0.04 },
+		panelStrong = { background = Color3.fromRGB(25, 23, 62), gradient = Color3.fromRGB(12, 11, 35), stroke = Color3.fromRGB(160, 131, 255), strokeTransparency = 0.01 },
+		panelRaised = { background = Color3.fromRGB(36, 31, 81), gradient = Color3.fromRGB(18, 17, 48), stroke = Color3.fromRGB(177, 148, 255), strokeTransparency = 0.01 },
+		success = { background = Color3.fromRGB(20, 64, 92), gradient = Color3.fromRGB(14, 34, 58), stroke = Color3.fromRGB(100, 225, 255), strokeTransparency = 0.03 },
+		hud = { background = Color3.fromRGB(28, 22, 72), gradient = Color3.fromRGB(14, 12, 44), stroke = Color3.fromRGB(196, 166, 255), strokeTransparency = 0.01 },
+	},
+	buttons = {
+		Primary = {
+			background = Color3.fromRGB(104, 80, 236),
+			hover = Color3.fromRGB(135, 112, 255),
+			pressed = Color3.fromRGB(80, 59, 192),
+			disabled = Color3.fromRGB(56, 56, 84),
+			text = Color3.fromRGB(247, 244, 255),
+			disabledText = Color3.fromRGB(161, 160, 190),
+			stroke = Color3.fromRGB(186, 158, 255),
+		},
+		Secondary = {
+			background = Color3.fromRGB(31, 34, 74),
+			hover = Color3.fromRGB(45, 49, 96),
+			pressed = Color3.fromRGB(24, 27, 61),
+			disabled = Color3.fromRGB(56, 56, 84),
+			text = Color3.fromRGB(238, 241, 255),
+			disabledText = Color3.fromRGB(161, 160, 190),
+			stroke = Color3.fromRGB(130, 113, 210),
+		},
+	},
+	input = {
+		enabledBackground = Color3.fromRGB(232, 236, 255),
+		disabledBackground = Color3.fromRGB(160, 166, 192),
+		enabledStroke = Color3.fromRGB(108, 92, 206),
+		disabledStroke = Color3.fromRGB(84, 88, 122),
+		text = Color3.fromRGB(17, 18, 40),
+		disabledText = Color3.fromRGB(96, 102, 134),
+	},
+	text = {
+		default = Color3.fromRGB(245, 244, 255),
+		muted = Color3.fromRGB(201, 200, 231),
+		accent = Color3.fromRGB(188, 163, 255),
+		warning = Color3.fromRGB(255, 205, 127),
+		coin = Color3.fromRGB(255, 223, 138),
+		success = Color3.fromRGB(111, 229, 239),
+	},
+	accents = {
+		primary = Color3.fromRGB(186, 158, 255),
+		secondary = Color3.fromRGB(94, 228, 255),
+		glowStart = Color3.fromRGB(138, 100, 255),
+		glowFinish = Color3.fromRGB(80, 207, 255),
+	},
+	overlay = {
+		color = Color3.fromRGB(2, 0, 10),
+		transparency = 0.18,
+	},
+	scrollBar = Color3.fromRGB(166, 146, 255),
+	strokeTint = Color3.fromRGB(170, 145, 255),
+	successTint = Color3.fromRGB(111, 229, 239),
+	semantic = {
+		historyEntry = Color3.fromRGB(18, 17, 47),
+		historyEntryAlt = Color3.fromRGB(11, 11, 31),
+		historyEntryBorder = Color3.fromRGB(131, 107, 222),
+		localCard = Color3.fromRGB(42, 28, 86),
+		localCardBorder = Color3.fromRGB(189, 159, 255),
+		opponentCard = Color3.fromRGB(20, 57, 76),
+		opponentCardBorder = Color3.fromRGB(98, 224, 255),
+		waitingCard = Color3.fromRGB(19, 20, 44),
+		waitingCardBorder = Color3.fromRGB(101, 90, 170),
+		readyPill = Color3.fromRGB(48, 28, 88),
+		readyPillBorder = Color3.fromRGB(180, 143, 255),
+		idlePill = Color3.fromRGB(24, 26, 55),
+		idlePillBorder = Color3.fromRGB(110, 104, 176),
+		activePanel = Color3.fromRGB(176, 146, 255),
+		idlePanel = Color3.fromRGB(86, 74, 148),
+		activeSecretPanel = Color3.fromRGB(168, 122, 255),
+		activeGuessPanel = Color3.fromRGB(88, 214, 255),
+		phaseSecret = Color3.fromRGB(72, 44, 124),
+		phaseGuess = Color3.fromRGB(22, 88, 118),
+		resultWin = Color3.fromRGB(25, 82, 105),
+		resultLoss = Color3.fromRGB(80, 36, 78),
+		resultTie = Color3.fromRGB(86, 62, 32),
+		playerLockedFilled = Color3.fromRGB(72, 40, 128),
+		playerLockedEmpty = Color3.fromRGB(21, 16, 42),
+		opponentLockedFilled = Color3.fromRGB(28, 88, 116),
+		opponentLockedEmpty = Color3.fromRGB(17, 22, 43),
+		resultLossBorder = Color3.fromRGB(228, 122, 220),
+	},
+}
+
+local currentUiThemeId = UI_THEME_IDS.Default
+local themedSurfaces = {}
+local themedButtons = {}
+local themedInputs = {}
+local themedTexts = {}
+local themedAccents = {}
+local themedOverlays = {}
+local themedScrollFrames = {}
+
 local devGui = GuiBuilder.getOrCreate(playerGui)
 local background = devGui:WaitForChild("Background")
 local menuScreen = devGui:WaitForChild("MenuScreen")
@@ -219,6 +423,166 @@ local guessHistoryCount = 0
 local currencyBalance = 0
 local lastCurrencyDelta = 0
 local setButtonEnabled
+local getUiTheme
+local themeSurfaceColor
+local themeStrokeColor
+local registerThemeSurface
+local registerThemeButton
+local registerThemeInput
+local registerThemeText
+local registerThemeAccent
+local registerThemeOverlay
+local registerThemeScrollFrame
+local getButtonVisualState
+local applyUiTheme
+
+local function initializeUiThemeBindings()
+	local shells = {
+		findUi(menuScreen, "MenuShell"),
+		findUi(lobbyScreen, "LobbyShell"),
+		findUi(matchScreen, "MatchShell"),
+		findUi(resultScreen, "ResultShell"),
+		findUi(menuScreen, "HowToPlayModal"),
+		findUi(shopPanel, "ShopModal"),
+		findUi(modeUi.coinPacksPanel, "CoinPacksModal"),
+		findUi(rewardsPanel, "RewardsModal"),
+		findUi(leaderboardPanel, "LeaderboardModal"),
+	}
+	for _, instance in ipairs(shells) do
+		registerThemeSurface(instance, "shell")
+	end
+
+	local strongPanels = {
+		findUi(menuScreen, "MenuHeroCard"),
+		findUi(lobbyScreen, "LobbyPanel"),
+		findUi(matchScreen, "StatusPanel"),
+		findUi(resultScreen, "ResultPanel"),
+		findUi(rewardsPanel, "RewardClaimCard"),
+	}
+	for _, instance in ipairs(strongPanels) do
+		registerThemeSurface(instance, "panelStrong")
+	end
+
+	local regularPanels = {
+		findUi(matchScreen, "SecretPanel"),
+		findUi(matchScreen, "LockedPanel"),
+		findUi(matchScreen, "HistoryPanel"),
+		findUi(resultScreen, "ResultSecretsCard"),
+		findUi(shopPanel, "ShopFooter"),
+		findUi(modeUi.coinPacksPanel, "CoinPacksFooter"),
+	}
+	for _, instance in ipairs(regularPanels) do
+		registerThemeSurface(instance, "panel")
+	end
+
+	local alternatePanels = {
+		findUi(menuScreen, "MenuInfoCard"),
+		findUi(matchScreen, "OpponentLockedCard"),
+		findUi(matchScreen, "GuessHistoryFrame"),
+		findUi(rewardsPanel, "RewardWheelCard"),
+		findUi(leaderboardPanel, "LeaderboardHeaderRow"),
+	}
+	for _, instance in ipairs(alternatePanels) do
+		registerThemeSurface(instance, "panelAlt")
+	end
+
+	local raisedPanels = {
+		findUi(matchScreen, "GuessPanel"),
+		currencyHud,
+	}
+	for _, instance in ipairs(raisedPanels) do
+		registerThemeSurface(instance, if instance == currencyHud then "hud" else "panelRaised")
+	end
+
+	registerThemeSurface(findUi(matchScreen, "YourLockedCard"), "success")
+
+	for index = 1, 4 do
+		registerThemeSurface(findUi(shopPanel, "ShopItemRow" .. tostring(index)), "panelAlt")
+	end
+
+	for index = 1, 3 do
+		registerThemeSurface(findUi(modeUi.coinPacksPanel, "CoinPackRow" .. tostring(index)), "panelAlt")
+	end
+
+	for index = 1, 5 do
+		registerThemeSurface(findUi(rewardsPanel, "RewardWheelSegment" .. tostring(index)), "panelRaised")
+	end
+
+	for index = 1, 6 do
+		registerThemeSurface(findUi(leaderboardPanel, "LeaderboardRow" .. tostring(index)), "panelAlt")
+	end
+
+	local accentGroups = {
+		{ instance = findUi(menuScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(lobbyScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(matchScreen, "TitleLabel"), role = "accent" },
+		{ instance = findUi(resultScreen, "TitleLabel"), role = "accent" },
+		{ instance = background:FindFirstChild("TopHalo"), role = "primary" },
+		{ instance = background:FindFirstChild("BottomHalo"), role = "secondary" },
+		{ instance = findUi(menuScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(lobbyScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(matchScreen, "HeaderGlow"), role = "glow" },
+		{ instance = findUi(resultScreen, "HeaderGlow"), role = "glow" },
+		{ instance = playerOneRow:FindFirstChild("AccentBar"), role = "primary" },
+		{ instance = playerTwoRow:FindFirstChild("AccentBar"), role = "secondary" },
+		{ instance = findUi(matchScreen, "StatusRibbon"), role = "glow" },
+	}
+	for _, entry in ipairs(accentGroups) do
+		if entry.instance then
+			registerThemeAccent(entry.instance, entry.role)
+		end
+	end
+
+	local staticTextGroups = {
+		{ instance = findUi(menuScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(lobbyScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(matchScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(resultScreen, "SubtitleLabel"), role = "muted" },
+		{ instance = findUi(menuScreen, "MenuTagLabel"), role = "warning" },
+		{ instance = findUi(currencyHud, "CurrencyTitleLabel"), role = "muted" },
+		{ instance = currencyAmountLabel, role = "coin" },
+		{ instance = rewardAmountLabel, role = "coin" },
+		{ instance = resultRewardLabel, role = "coin" },
+	}
+	for _, entry in ipairs(staticTextGroups) do
+		registerThemeText(entry.instance, entry.role)
+	end
+
+	registerThemeOverlay(howToPlayPanel, 0.34)
+	registerThemeOverlay(shopPanel)
+	registerThemeOverlay(modeUi.coinPacksPanel)
+	registerThemeOverlay(rewardsPanel)
+	registerThemeOverlay(leaderboardPanel)
+
+	registerThemeScrollFrame(guessHistoryFrame)
+	registerThemeInput(secretTextBox)
+	registerThemeInput(guessTextBox)
+
+	local secondaryButtons = {
+		menuBackButton,
+		howToPlayButton,
+		closeHowToPlayButton,
+		lobbyBackButton,
+		restartButton,
+		backToMenuButton,
+		closeShopButton,
+		modeUi.openCoinPacksButton,
+		modeUi.buyCoinsHudButton,
+		modeUi.closeCoinPacksButton,
+		closeRewardsButton,
+		closeLeaderboardButton,
+	}
+	local secondaryLookup = {}
+	for _, button in ipairs(secondaryButtons) do
+		secondaryLookup[button] = true
+	end
+
+	for _, descendant in ipairs(devGui:GetDescendants()) do
+		if descendant:IsA("TextButton") then
+			registerThemeButton(descendant, if secondaryLookup[descendant] then "Secondary" else "Primary")
+		end
+	end
+end
 
 local function isFourDigits(value)
 	return string.match(value, "^%d%d%d%d$") ~= nil
@@ -286,9 +650,11 @@ end
 local function updateCurrencyHud(delta)
 	currencyAmountLabel.Text = tostring(currencyBalance)
 	lastCurrencyDelta = delta or lastCurrencyDelta or 0
+	currencyAmountLabel.TextColor3 = getUiTheme().text.coin
 
 	if lastCurrencyDelta > 0 then
 		currencyDeltaLabel.Text = "+" .. tostring(lastCurrencyDelta)
+		currencyDeltaLabel.TextColor3 = getUiTheme().text.success
 	else
 		currencyDeltaLabel.Text = ""
 	end
@@ -334,13 +700,15 @@ local function updateShopPanel(shopState)
 			local stateText = if equipped then "Equipped" elseif owned then "Owned" else ""
 			row.state.Visible = stateText ~= ""
 			row.state.Text = stateText
-			row.state.TextColor3 = if equipped then COLORS.successText else COLORS.disabledText
+			row.state.TextColor3 = if equipped then getUiTheme().text.success else getUiTheme().text.muted
 			setButtonEnabled(row.buyButton, not owned)
 			setButtonEnabled(row.equipButton, owned)
 			row.buyButton.Text = if owned then "Owned" else "Buy"
 			row.equipButton.Text = if equipped then "Unequip" else "Equip"
 		end
 	end
+
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function updateCoinPacksPanel(coinPackState)
@@ -363,6 +731,8 @@ local function updateCoinPacksPanel(coinPackState)
 			setButtonEnabled(row.button, configured)
 		end
 	end
+
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function updateLeaderboardPanel(leaderboardState)
@@ -383,6 +753,8 @@ local function updateLeaderboardPanel(leaderboardState)
 			row.coins.Text = tostring(entry.coins or 0)
 		end
 	end
+
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function updateRewardsPanel(rewardState)
@@ -400,7 +772,7 @@ local function updateRewardsPanel(rewardState)
 	claimRewardButton.Text = if canClaim then "Claim Daily Reward" else "Claimed Today"
 	setButtonEnabled(claimRewardButton, canClaim)
 	modeUi.rewardNextClaimLabel.Text = (state and state.nextClaimText) or "Ready now"
-	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then COLORS.successText else COLORS.disabledText
+	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then getUiTheme().text.success else getUiTheme().text.muted
 	rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
 	rewardWheelBodyLabel.Text = (state and state.wheelStatus) or "Reward wheel coming next. Daily coins are live now."
 
@@ -413,6 +785,8 @@ local function updateRewardsPanel(rewardState)
 			label.Text = rewardSegment and tostring(rewardSegment.label) or "-"
 		end
 	end
+
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local COSMETIC_INSTANCES = {
@@ -426,24 +800,22 @@ local COSMETIC_INSTANCES = {
 
 local function getEquippedForPlayer(player)
 	local equippedByPlayerId = modeUi.latestCosmeticsState and modeUi.latestCosmeticsState.equippedByPlayerId or {}
-	return equippedByPlayerId[tostring(player.UserId)] or {}
+	local equippedItems = equippedByPlayerId[tostring(player.UserId)] or {}
+	if player ~= localPlayer then
+		return equippedItems
+	end
+
+	local localShopEquippedItems = modeUi.latestShopState and modeUi.latestShopState.equippedItems or nil
+	if type(localShopEquippedItems) ~= "table" then
+		return equippedItems
+	end
+	return localShopEquippedItems
 end
 
 local function destroyNamedChild(parent, childName)
 	local child = parent and parent:FindFirstChild(childName)
 	if child then
 		child:Destroy()
-	end
-end
-
-local function applyMidnightTheme(equippedItems)
-	local enabled = equippedItems.Theme == "theme_midnight"
-	background.BackgroundColor3 = if enabled then Color3.fromRGB(12, 9, 26) else Color3.fromRGB(8, 13, 22)
-	currencyHud.BackgroundColor3 = if enabled then Color3.fromRGB(34, 24, 62) else COLORS.historyEntry
-	local stroke = currencyHud:FindFirstChildOfClass("UIStroke")
-	if stroke then
-		stroke.Color = if enabled then Color3.fromRGB(174, 120, 255) else COLORS.historyEntryBorder
-		stroke.Transparency = if enabled then 0.08 else 0.18
 	end
 end
 
@@ -544,7 +916,7 @@ local function applyAllCosmetics()
 	for _, player in ipairs(Players:GetPlayers()) do
 		applyCharacterCosmetics(player)
 	end
-	applyMidnightTheme(getEquippedForPlayer(localPlayer))
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function setValidationMessage(label, message)
@@ -585,6 +957,106 @@ end
 local function getColorAttribute(instance, attributeName, fallback)
 	local value = instance:GetAttribute(attributeName)
 	return if typeof(value) == "Color3" then value else fallback
+end
+
+local function lerpColor(fromColor, toColor, alpha)
+	return Color3.new(
+		fromColor.R + ((toColor.R - fromColor.R) * alpha),
+		fromColor.G + ((toColor.G - fromColor.G) * alpha),
+		fromColor.B + ((toColor.B - fromColor.B) * alpha)
+	)
+end
+
+getUiTheme = function()
+	return UI_THEMES[currentUiThemeId] or UI_THEMES[UI_THEME_IDS.Default]
+end
+
+local function isMidnightThemeEnabled()
+	return currentUiThemeId == UI_THEME_IDS.Midnight
+end
+
+local function getSemanticThemeColor(key, fallback)
+	local semantic = getUiTheme().semantic
+	if semantic and semantic[key] then
+		return semantic[key]
+	end
+
+	return fallback
+end
+
+themeSurfaceColor = function(color)
+	if not isMidnightThemeEnabled() then
+		return color
+	end
+
+	return lerpColor(lerpColor(color, Color3.fromRGB(12, 12, 30), 0.3), Color3.fromRGB(100, 82, 186), 0.14)
+end
+
+themeStrokeColor = function(color)
+	if not isMidnightThemeEnabled() then
+		return color
+	end
+
+	return lerpColor(color, getUiTheme().strokeTint, 0.38)
+end
+
+registerThemeSurface = function(instance, role)
+	table.insert(themedSurfaces, {
+		instance = instance,
+		role = role,
+	})
+end
+
+registerThemeButton = function(button, variant)
+	table.insert(themedButtons, {
+		instance = button,
+		variant = variant,
+	})
+end
+
+registerThemeInput = function(input)
+	table.insert(themedInputs, input)
+end
+
+registerThemeText = function(label, role)
+	table.insert(themedTexts, {
+		instance = label,
+		role = role,
+	})
+end
+
+registerThemeAccent = function(instance, role)
+	table.insert(themedAccents, {
+		instance = instance,
+		role = role,
+	})
+end
+
+registerThemeOverlay = function(instance, transparencyOverride)
+	table.insert(themedOverlays, {
+		instance = instance,
+		transparency = transparencyOverride,
+	})
+end
+
+registerThemeScrollFrame = function(frame)
+	table.insert(themedScrollFrames, frame)
+end
+
+getButtonVisualState = function(button)
+	if not button.Active then
+		return "disabled"
+	end
+
+	if button:GetAttribute("IsPressed") then
+		return "pressed"
+	end
+
+	if button:GetAttribute("IsHovered") then
+		return "hover"
+	end
+
+	return "default"
 end
 
 local function applyButtonVisual(button, visualState)
@@ -633,6 +1105,136 @@ local function applyButtonVisual(button, visualState)
 	end
 end
 
+local function applySurfaceTheme(instance, role)
+	local style = getUiTheme().surfaces[role]
+	if not instance or not style then
+		return
+	end
+
+	instance.BackgroundColor3 = style.background
+	local stroke = getStroke(instance)
+	if stroke then
+		stroke.Color = style.stroke
+		stroke.Transparency = style.strokeTransparency or 0.1
+	end
+
+	local gradient = getGradient(instance)
+	if gradient then
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, style.background),
+			ColorSequenceKeypoint.new(1, style.gradient),
+		})
+	end
+end
+
+local function applyButtonTheme(button, variant)
+	local palette = getUiTheme().buttons[variant]
+	if not button or not palette then
+		return
+	end
+
+	button:SetAttribute("EnabledBackgroundColor", palette.background)
+	button:SetAttribute("HoverBackgroundColor", palette.hover)
+	button:SetAttribute("PressedBackgroundColor", palette.pressed)
+	button:SetAttribute("DisabledBackgroundColor", palette.disabled)
+	button:SetAttribute("EnabledTextColor", palette.text)
+	button:SetAttribute("DisabledTextColor", palette.disabledText)
+	button:SetAttribute("StrokeColor", palette.stroke)
+	applyButtonVisual(button, getButtonVisualState(button))
+end
+
+local function applyInputTheme(input)
+	local theme = getUiTheme()
+	if not input then
+		return
+	end
+
+	input:SetAttribute("EnabledBackgroundColor", theme.input.enabledBackground)
+	input:SetAttribute("DisabledBackgroundColor", theme.input.disabledBackground)
+	input:SetAttribute("EnabledStrokeColor", theme.input.enabledStroke)
+	input:SetAttribute("DisabledStrokeColor", theme.input.disabledStroke)
+	input.TextColor3 = if input.TextEditable then theme.input.text else theme.input.disabledText
+	input.BackgroundColor3 = getColorAttribute(
+		input,
+		if input.TextEditable then "EnabledBackgroundColor" else "DisabledBackgroundColor",
+		if input.TextEditable then theme.input.enabledBackground else theme.input.disabledBackground
+	)
+	local stroke = getStroke(input)
+	if stroke then
+		stroke.Color = getColorAttribute(
+			input,
+			if input.TextEditable then "EnabledStrokeColor" else "DisabledStrokeColor",
+			if input.TextEditable then theme.input.enabledStroke else theme.input.disabledStroke
+		)
+	end
+end
+
+applyUiTheme = function(equippedItems)
+	currentUiThemeId = if equippedItems.Theme == UI_THEME_IDS.Midnight then UI_THEME_IDS.Midnight else UI_THEME_IDS.Default
+
+	local theme = getUiTheme()
+	background.BackgroundColor3 = theme.background.start
+	local backgroundGradient = getGradient(background)
+	if backgroundGradient then
+		backgroundGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, theme.background.start),
+			ColorSequenceKeypoint.new(1, theme.background.finish),
+		})
+	end
+
+	for _, entry in ipairs(themedSurfaces) do
+		applySurfaceTheme(entry.instance, entry.role)
+	end
+
+	for _, entry in ipairs(themedButtons) do
+		applyButtonTheme(entry.instance, entry.variant)
+	end
+
+	for _, input in ipairs(themedInputs) do
+		applyInputTheme(input)
+	end
+
+	for _, entry in ipairs(themedTexts) do
+		if entry.instance then
+			entry.instance.TextColor3 = theme.text[entry.role] or theme.text.default
+		end
+	end
+
+	for _, entry in ipairs(themedAccents) do
+		if entry.instance then
+			local accentColor = theme.accents[entry.role] or theme.accents.primary
+			if entry.instance:IsA("TextLabel") or entry.instance:IsA("TextButton") or entry.instance:IsA("TextBox") then
+				entry.instance.TextColor3 = accentColor
+			else
+				entry.instance.BackgroundColor3 = accentColor
+			end
+
+			local gradient = getGradient(entry.instance)
+			if gradient and entry.role == "glow" then
+				gradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, theme.accents.glowStart),
+					ColorSequenceKeypoint.new(1, theme.accents.glowFinish),
+				})
+			end
+		end
+	end
+
+	for _, entry in ipairs(themedOverlays) do
+		if entry.instance then
+			entry.instance.BackgroundColor3 = theme.overlay.color
+			entry.instance.BackgroundTransparency = entry.transparency or theme.overlay.transparency
+		end
+	end
+
+	for _, frame in ipairs(themedScrollFrames) do
+		if frame then
+			frame.ScrollBarImageColor3 = theme.scrollBar
+		end
+	end
+
+	updateCurrencyHud()
+end
+
 local function wireButtonInteractions(button)
 	if not button:IsA("TextButton") then
 		return
@@ -678,19 +1280,19 @@ local function wireButtonInteractions(button)
 end
 
 local function updateCardVisual(card, backgroundColor, strokeColor)
-	card.BackgroundColor3 = backgroundColor
+	card.BackgroundColor3 = themeSurfaceColor(backgroundColor)
 
 	local stroke = getStroke(card)
 	if stroke then
-		stroke.Color = strokeColor
+		stroke.Color = themeStrokeColor(strokeColor)
 		stroke.Transparency = 0.1
 	end
 
 	local gradient = getGradient(card)
 	if gradient then
 		gradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, backgroundColor),
-			ColorSequenceKeypoint.new(1, COLORS.historyEntryAlt),
+			ColorSequenceKeypoint.new(0, themeSurfaceColor(backgroundColor)),
+			ColorSequenceKeypoint.new(1, themeSurfaceColor(getSemanticThemeColor("historyEntryAlt", COLORS.historyEntryAlt))),
 		})
 	end
 end
@@ -699,15 +1301,19 @@ local function updateReadyPill(pill, ready)
 	local stroke = getStroke(pill)
 	local gradient = getGradient(pill)
 
-	pill.BackgroundColor3 = if ready then COLORS.readyPill else COLORS.idlePill
+	pill.BackgroundColor3 = themeSurfaceColor(if ready
+		then getSemanticThemeColor("readyPill", COLORS.readyPill)
+		else getSemanticThemeColor("idlePill", COLORS.idlePill))
 	if stroke then
-		stroke.Color = if ready then COLORS.readyPillBorder else COLORS.idlePillBorder
+		stroke.Color = themeStrokeColor(if ready
+			then getSemanticThemeColor("readyPillBorder", COLORS.readyPillBorder)
+			else getSemanticThemeColor("idlePillBorder", COLORS.idlePillBorder))
 		stroke.Transparency = 0.08
 	end
 	if gradient then
 		gradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, pill.BackgroundColor3),
-			ColorSequenceKeypoint.new(1, COLORS.historyEntryAlt),
+			ColorSequenceKeypoint.new(1, themeSurfaceColor(getSemanticThemeColor("historyEntryAlt", COLORS.historyEntryAlt))),
 		})
 	end
 end
@@ -715,7 +1321,9 @@ end
 local function setPanelAccent(panel, enabled, activeColor)
 	local stroke = getStroke(panel)
 	if stroke then
-		stroke.Color = if enabled then (activeColor or COLORS.activePanel) else COLORS.idlePanel
+		stroke.Color = themeStrokeColor(if enabled
+			then (activeColor or getSemanticThemeColor("activePanel", COLORS.activePanel))
+			else getSemanticThemeColor("idlePanel", COLORS.idlePanel))
 		stroke.Transparency = if enabled then 0.05 else 0.22
 	end
 	panel.BackgroundTransparency = if enabled then 0 else 0.08
@@ -727,25 +1335,29 @@ local function setStatusChip(text, backgroundColor, strokeColor)
 end
 
 local function setStateLabel(label, text, isActive)
+	local theme = getUiTheme()
 	label.Text = text
-	label.TextColor3 = if isActive then COLORS.enabledText else COLORS.disabledText
+	label.TextColor3 = if isActive then theme.text.default else theme.text.muted
 	label.TextTransparency = if isActive then 0 else 0.15
 end
 
 local function setDigitSlotValues(slots, values, filledColor, emptyColor)
 	for index, slot in ipairs(slots) do
 		local digit = values[index]
-		slot.BackgroundColor3 = if digit then filledColor else emptyColor
+		slot.BackgroundColor3 = if digit then themeSurfaceColor(filledColor) else themeSurfaceColor(emptyColor)
 
 		local stroke = getStroke(slot)
 		if stroke then
-			stroke.Color = if digit then filledColor else COLORS.historyEntryBorder
+			stroke.Color = if digit
+				then themeStrokeColor(filledColor)
+				else themeStrokeColor(getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder))
 			stroke.Transparency = if digit then 0.08 else 0.3
 		end
 
 		local label = slot:FindFirstChild("DigitLabel")
 		if label and label:IsA("TextLabel") then
 			label.Text = tostring(digit or "_")
+			label.TextColor3 = getUiTheme().text.default
 			label.TextTransparency = if digit then 0 else 0.28
 		end
 	end
@@ -786,48 +1398,50 @@ function setButtonEnabled(button, enabled)
 end
 
 local function setSecretControlsEnabled(enabled)
+	local theme = getUiTheme()
 	secretControlsEnabled = enabled
 	secretTextBox.TextEditable = enabled
 	secretTextBox.BackgroundColor3 = getColorAttribute(
 		secretTextBox,
 		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
-		if enabled then COLORS.enabledInput else COLORS.disabledInput
+		if enabled then theme.input.enabledBackground else theme.input.disabledBackground
 	)
-	secretTextBox.TextColor3 = if enabled then Color3.fromRGB(18, 25, 36) else COLORS.disabledInputText
+	secretTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
 	secretTextBox.TextTransparency = if enabled then 0 else 0.15
 	local stroke = getStroke(secretTextBox)
 	if stroke then
 		stroke.Color = getColorAttribute(
 			secretTextBox,
 			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
-			if enabled then COLORS.enabledButton else COLORS.disabledButton
+			if enabled then theme.input.enabledStroke else theme.input.disabledStroke
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(secretPanel, enabled, COLORS.activeSecretPanel)
+	setPanelAccent(secretPanel, enabled, getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel))
 	setButtonEnabled(submitSecretButton, enabled)
 end
 
 local function setGuessControlsEnabled(enabled)
+	local theme = getUiTheme()
 	guessControlsEnabled = enabled
 	guessTextBox.TextEditable = enabled
 	guessTextBox.BackgroundColor3 = getColorAttribute(
 		guessTextBox,
 		if enabled then "EnabledBackgroundColor" else "DisabledBackgroundColor",
-		if enabled then COLORS.enabledInput else COLORS.disabledInput
+		if enabled then theme.input.enabledBackground else theme.input.disabledBackground
 	)
-	guessTextBox.TextColor3 = if enabled then Color3.fromRGB(18, 25, 36) else COLORS.disabledInputText
+	guessTextBox.TextColor3 = if enabled then theme.input.text else theme.input.disabledText
 	guessTextBox.TextTransparency = if enabled then 0 else 0.15
 	local stroke = getStroke(guessTextBox)
 	if stroke then
 		stroke.Color = getColorAttribute(
 			guessTextBox,
 			if enabled then "EnabledStrokeColor" else "DisabledStrokeColor",
-			if enabled then COLORS.enabledButton else COLORS.disabledButton
+			if enabled then theme.input.enabledStroke else theme.input.disabledStroke
 		)
 		stroke.Transparency = if enabled then 0.2 else 0.4
 	end
-	setPanelAccent(guessPanel, enabled, COLORS.activeGuessPanel)
+	setPanelAccent(guessPanel, enabled, getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel))
 	setButtonEnabled(submitGuessButton, enabled)
 end
 
@@ -921,11 +1535,15 @@ local function addGuessHistoryEntry(result)
 	entry.Name = "GuessHistoryEntry"
 	entry.LayoutOrder = guessHistoryCount
 	entry.Size = UDim2.new(1, -4, 0, 94)
-	entry.BackgroundColor3 = COLORS.historyEntry
+	entry.BackgroundColor3 = getSemanticThemeColor("historyEntry", COLORS.historyEntry)
 	entry.BorderSizePixel = 0
 	entry.Parent = guessHistoryFrame
 
-	updateCardVisual(entry, COLORS.historyEntry, COLORS.historyEntryBorder)
+	updateCardVisual(
+		entry,
+		getSemanticThemeColor("historyEntry", COLORS.historyEntry),
+		getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
+	)
 	addCorner(entry, 12)
 
 	local padding = Instance.new("UIPadding")
@@ -941,7 +1559,7 @@ local function addGuessHistoryEntry(result)
 	countLabel.BackgroundTransparency = 1
 	countLabel.Font = Enum.Font.GothamBold
 	countLabel.Text = "GUESS " .. tostring(guessHistoryCount)
-	countLabel.TextColor3 = COLORS.disabledText
+	countLabel.TextColor3 = getUiTheme().text.muted
 	countLabel.TextSize = 12
 	countLabel.TextXAlignment = Enum.TextXAlignment.Left
 	countLabel.Parent = entry
@@ -953,7 +1571,7 @@ local function addGuessHistoryEntry(result)
 	guessLabel.BackgroundTransparency = 1
 	guessLabel.Font = Enum.Font.GothamBlack
 	guessLabel.Text = tostring(result.guess)
-	guessLabel.TextColor3 = COLORS.enabledText
+	guessLabel.TextColor3 = getUiTheme().text.default
 	guessLabel.TextSize = 24
 	guessLabel.TextXAlignment = Enum.TextXAlignment.Left
 	guessLabel.Parent = entry
@@ -965,7 +1583,7 @@ local function addGuessHistoryEntry(result)
 	feedbackLabel.BackgroundTransparency = 1
 	feedbackLabel.Font = Enum.Font.GothamBold
 	feedbackLabel.Text = if result.feedback then "Feedback: " .. tostring(result.feedback) else "Locked: " .. formatLockedPositions(result.matches)
-	feedbackLabel.TextColor3 = COLORS.disabledText
+	feedbackLabel.TextColor3 = getUiTheme().text.muted
 	feedbackLabel.TextSize = 15
 	feedbackLabel.TextXAlignment = Enum.TextXAlignment.Left
 	feedbackLabel.Parent = entry
@@ -982,11 +1600,25 @@ local function resetRoundUi()
 	playerLockedLabel.Text = "Your code"
 	opponentLockedLabel.Text = "Their code"
 	turnLabel.Text = "Turn: waiting"
-	setStatusChip("Waiting", COLORS.historyEntry, COLORS.historyEntryBorder)
+	setStatusChip(
+		"Waiting",
+		getSemanticThemeColor("historyEntry", COLORS.historyEntry),
+		getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
+	)
 	setStateLabel(secretStateLabel, "Waiting for round", false)
 	setStateLabel(guessStateLabel, "Waiting for turn", false)
-	setDigitSlotValues(playerLockedSlots, {}, Color3.fromRGB(52, 88, 72), Color3.fromRGB(31, 48, 42))
-	setDigitSlotValues(opponentLockedSlots, {}, Color3.fromRGB(49, 84, 126), Color3.fromRGB(33, 44, 58))
+	setDigitSlotValues(
+		playerLockedSlots,
+		{},
+		getSemanticThemeColor("playerLockedFilled", Color3.fromRGB(52, 88, 72)),
+		getSemanticThemeColor("playerLockedEmpty", Color3.fromRGB(31, 48, 42))
+	)
+	setDigitSlotValues(
+		opponentLockedSlots,
+		{},
+		getSemanticThemeColor("opponentLockedFilled", Color3.fromRGB(49, 84, 126)),
+		getSemanticThemeColor("opponentLockedEmpty", Color3.fromRGB(33, 44, 58))
+	)
 	clearGuessHistory()
 	setSecretControlsEnabled(false)
 	setGuessControlsEnabled(false)
@@ -1008,14 +1640,14 @@ local function updateLockedLabels(roundState)
 	setDigitSlotValues(
 		playerLockedSlots,
 		lockedPositionsByPlayerId[tostring(localPlayerId)] or {},
-		Color3.fromRGB(52, 88, 72),
-		Color3.fromRGB(31, 48, 42)
+		getSemanticThemeColor("playerLockedFilled", Color3.fromRGB(52, 88, 72)),
+		getSemanticThemeColor("playerLockedEmpty", Color3.fromRGB(31, 48, 42))
 	)
 	setDigitSlotValues(
 		opponentLockedSlots,
 		lockedPositionsByPlayerId[tostring(opponentId)] or {},
-		Color3.fromRGB(49, 84, 126),
-		Color3.fromRGB(33, 44, 58)
+		getSemanticThemeColor("opponentLockedFilled", Color3.fromRGB(49, 84, 126)),
+		getSemanticThemeColor("opponentLockedEmpty", Color3.fromRGB(33, 44, 58))
 	)
 end
 
@@ -1046,8 +1678,9 @@ local function formatPlayerSlot(slotNumber, playerId)
 end
 
 local function updateReadyLabel(label, ready)
+	local theme = getUiTheme()
 	label.Text = if ready then "Ready" else "Not ready"
-	label.TextColor3 = if ready then COLORS.successText else COLORS.disabledText
+	label.TextColor3 = if ready then theme.text.success else theme.text.muted
 	label.Font = if ready then Enum.Font.GothamBold else Enum.Font.Gotham
 end
 
@@ -1057,14 +1690,26 @@ local function updateLobbyPlayerCard(card, readyPill, slotLabel, readyLabel, slo
 	updateReadyPill(readyPill, ready)
 
 	if not playerId then
-		updateCardVisual(card, COLORS.waitingCard, COLORS.waitingCardBorder)
+		updateCardVisual(
+			card,
+			getSemanticThemeColor("waitingCard", COLORS.waitingCard),
+			getSemanticThemeColor("waitingCardBorder", COLORS.waitingCardBorder)
+		)
 		return
 	end
 
 	if playerId == localPlayer.UserId then
-		updateCardVisual(card, COLORS.localCard, COLORS.localCardBorder)
+		updateCardVisual(
+			card,
+			getSemanticThemeColor("localCard", COLORS.localCard),
+			getSemanticThemeColor("localCardBorder", COLORS.localCardBorder)
+		)
 	else
-		updateCardVisual(card, COLORS.opponentCard, COLORS.opponentCardBorder)
+		updateCardVisual(
+			card,
+			getSemanticThemeColor("opponentCard", COLORS.opponentCard),
+			getSemanticThemeColor("opponentCardBorder", COLORS.opponentCardBorder)
+		)
 	end
 end
 
@@ -1143,7 +1788,11 @@ local function updateResult(roundState)
 		resultRewardLabel.Text = ""
 		modeUi.resultYourSecretLabel.Text = "Your secret: -"
 		modeUi.resultOpponentSecretLabel.Text = "Opponent secret: -"
-		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
+		updateCardVisual(
+			resultWinnerCard,
+			getSemanticThemeColor("historyEntry", COLORS.historyEntry),
+			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
+		)
 		setRestartControlsEnabled(false)
 		return
 	end
@@ -1153,19 +1802,35 @@ local function updateResult(roundState)
 	if roundState.isTie or winnerId == TIE_WINNER then
 		resultWinnerLabel.Text = "Result: Tie"
 		resultSubtitleLabel.Text = copy.tieSubtitle
-		updateCardVisual(resultWinnerCard, COLORS.resultTie, COLORS.historyEntryBorder)
+		updateCardVisual(
+			resultWinnerCard,
+			getSemanticThemeColor("resultTie", COLORS.resultTie),
+			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
+		)
 	elseif winnerId == localPlayer.UserId then
 		resultWinnerLabel.Text = "Winner: You"
 		resultSubtitleLabel.Text = copy.youWonSubtitle
-		updateCardVisual(resultWinnerCard, COLORS.resultWin, COLORS.readyPillBorder)
+		updateCardVisual(
+			resultWinnerCard,
+			getSemanticThemeColor("resultWin", COLORS.resultWin),
+			getSemanticThemeColor("readyPillBorder", COLORS.readyPillBorder)
+		)
 	elseif winnerId then
 		resultWinnerLabel.Text = "Winner: Opponent"
 		resultSubtitleLabel.Text = copy.opponentWonSubtitle
-		updateCardVisual(resultWinnerCard, COLORS.resultLoss, Color3.fromRGB(208, 122, 122))
+		updateCardVisual(
+			resultWinnerCard,
+			getSemanticThemeColor("resultLoss", COLORS.resultLoss),
+			getSemanticThemeColor("resultLossBorder", Color3.fromRGB(208, 122, 122))
+		)
 	else
 		resultWinnerLabel.Text = "Winner: -"
 		resultSubtitleLabel.Text = "Round complete."
-		updateCardVisual(resultWinnerCard, COLORS.historyEntry, COLORS.historyEntryBorder)
+		updateCardVisual(
+			resultWinnerCard,
+			getSemanticThemeColor("historyEntry", COLORS.historyEntry),
+			getSemanticThemeColor("historyEntryBorder", COLORS.historyEntryBorder)
+		)
 	end
 
 	local finalSecretsByPlayerId = roundState.finalSecretsByPlayerId or {}
@@ -1247,7 +1912,11 @@ local function updateMatchForUiState(uiState, roundState)
 		local copy = getModeCopy()
 		statusLabel.Text = copy.enterSecretStatus
 		turnLabel.Text = "Turn: waiting"
-		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
+		setStatusChip(
+			"Secret phase",
+			getSemanticThemeColor("phaseSecret", COLORS.phaseSecret),
+			getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel)
+		)
 		setStateLabel(secretStateLabel, copy.secretActiveState, true)
 		setStateLabel(guessStateLabel, copy.guessLockedState, false)
 		setSecretControlsEnabled(canSubmitSecret(roundState) == true)
@@ -1256,7 +1925,11 @@ local function updateMatchForUiState(uiState, roundState)
 		local copy = getModeCopy()
 		statusLabel.Text = copy.waitingSecretStatus
 		turnLabel.Text = "Turn: waiting"
-		setStatusChip("Secret phase", COLORS.phaseSecret, COLORS.activeSecretPanel)
+		setStatusChip(
+			"Secret phase",
+			getSemanticThemeColor("phaseSecret", COLORS.phaseSecret),
+			getSemanticThemeColor("activeSecretPanel", COLORS.activeSecretPanel)
+		)
 		setStateLabel(secretStateLabel, copy.secretSavedState, false)
 		setStateLabel(guessStateLabel, copy.guessWaitingState, false)
 		setSecretControlsEnabled(false)
@@ -1265,7 +1938,11 @@ local function updateMatchForUiState(uiState, roundState)
 		local copy = getModeCopy()
 		statusLabel.Text = "Your turn"
 		turnLabel.Text = "Turn: you"
-		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
+		setStatusChip(
+			"Guess phase",
+			getSemanticThemeColor("phaseGuess", COLORS.phaseGuess),
+			getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel)
+		)
 		setStateLabel(secretStateLabel, copy.secretLockedState, false)
 		setStateLabel(guessStateLabel, copy.guessActiveState, true)
 		setSecretControlsEnabled(false)
@@ -1274,7 +1951,11 @@ local function updateMatchForUiState(uiState, roundState)
 		local copy = getModeCopy()
 		statusLabel.Text = "Opponent's turn"
 		turnLabel.Text = if roundState and roundState.currentTurn then "Turn: opponent" else "Turn: waiting"
-		setStatusChip("Guess phase", COLORS.phaseGuess, COLORS.activeGuessPanel)
+		setStatusChip(
+			"Guess phase",
+			getSemanticThemeColor("phaseGuess", COLORS.phaseGuess),
+			getSemanticThemeColor("activeGuessPanel", COLORS.activeGuessPanel)
+		)
 		setStateLabel(secretStateLabel, copy.secretLockedState, false)
 		setStateLabel(guessStateLabel, copy.guessOpponentState, false)
 		setSecretControlsEnabled(false)
@@ -1309,6 +1990,8 @@ local function renderUi()
 		setGuessControlsEnabled(false)
 		updateResult(latestRoundState)
 	end
+
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function setUiState(nextUiState)
@@ -1383,6 +2066,7 @@ local function onGuessResult(result)
 	statusLabel.Text = "Guess submitted"
 	setValidationMessage(guessValidationLabel, "")
 	addGuessHistoryEntry(result)
+	applyUiTheme(getEquippedForPlayer(localPlayer))
 end
 
 local function onRoundStateChanged(roundState)
@@ -1625,6 +2309,8 @@ for index = 1, 6 do
 		coins = findUi(leaderboardPanel, "LeaderboardCoinsLabel" .. tostring(index)),
 	}
 end
+
+initializeUiThemeBindings()
 
 for _, descendant in ipairs(devGui:GetDescendants()) do
 	if descendant:IsA("TextButton") then
