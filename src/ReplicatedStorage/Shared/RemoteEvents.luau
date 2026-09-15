@@ -117,6 +117,9 @@ return {
 	-- Client -> server. Payload: none; claims the current daily reward.
 	RewardClaimRequested = getOrCreateRemoteEvent("RewardClaimRequested"),
 
+	-- Client -> server. Payload: none; spins the daily prize wheel.
+	RewardSpinRequested = getOrCreateRemoteEvent("RewardSpinRequested"),
+
 	-- Server -> client. Payload: opens the session leaderboard panel.
 	LeaderboardOpened = getOrCreateRemoteEvent("LeaderboardOpened"),
 

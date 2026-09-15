@@ -66,6 +66,7 @@ The current experience is still built around a single live two-player round mana
 - coin balance tracking
 - win / loss / tie rewards
 - daily claim style reward
+- daily prize wheel spin with weighted coin rewards
 - shop purchase and equip state
 - cosmetic state broadcasting to clients
 - DataStore-backed progression and leaderboard stats
@@ -100,7 +101,7 @@ Current world areas:
 Important current-world notes:
 
 - There is no separate physical `Modes` station anymore. Mode choice is now primarily tied to the game pads in the `Game Area`.
-- The rewards area visually includes a spin wheel, but it is decorative scaffolding right now.
+- The rewards area includes a spin wheel; the server grants one weighted wheel reward per UTC day.
 - The lobby is functional but still clearly code-generated rather than art-passed.
 
 ## Economy / Coin System Summary
@@ -139,6 +140,7 @@ Progression is persisted with DataStores:
 - equipped items
 - processed Developer Product receipts
 - last daily reward claim day
+- last prize wheel spin day
 
 Leaderboard stats are also persisted separately:
 
@@ -335,24 +337,25 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 - ready-up and matchmaking queue by mode
 - round rewards
 - DataStore-backed daily reward claim
+- DataStore-backed daily prize wheel spin
 - replay/rematch flow
 - DataStore-backed progression
 - DataStore-backed wins/streak leaderboard
 - shop ownership and equip state
 - visible cosmetic application for several items
 - Developer Product coin pack config and receipt flow
+- weighted reward wheel coin grants
 
 ### Implemented but still rough
 
 - coin pack purchase UI
-- reward wheel foundation / segment presentation
+- reward wheel animation and result presentation
 - smoke-test scripts
 - generated lobby presentation
 
 ### Placeholder / incomplete
 
-- real spin wheel behavior and animation
-- real rewards wheel claim mechanic beyond daily claim
+- polished spin wheel animation
 - broader cosmetic catalog
 - more robust automated testing
 - deeper session-service decomposition beyond the first naming cleanup
@@ -375,9 +378,9 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 ### Phase 2: Rewards Feature Completion
 
-- decide whether the rewards station remains a daily-claim-plus-wheel feature or daily claim only
-- if wheel stays, implement weighted roll selection from the configured reward segments
-- add client feedback for spin outcome
+- keep the rewards station as a daily-claim-plus-wheel feature
+- keep weighted roll selection server-authoritative
+- improve client animation and celebration feedback for spin outcomes
 - update rewards copy to match the final mechanic
 
 ### Phase 3: Stability and Test Coverage
@@ -403,14 +406,14 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 ### Phase 6: Pending Features Expansion
 
 - decide which pending features are in MVP versus post-MVP scope
-- replace placeholder cosmetic descriptions with final player-facing copy
+- keep cosmetic descriptions aligned with visible in-game behavior
 - decide whether to keep the generated lobby presentation or invest in a deeper environment pass
 - review whether more game modes, reward loops, or progression hooks should be added
 
 ## Current Recommended Priority Order
 
 1. Validate the configured Developer Product purchase flow.
-2. Finish or simplify the rewards wheel.
+2. Polish the implemented rewards wheel.
 3. Add better automated coverage for gameplay and economy.
 4. Split the monolithic session and client/UI files.
 5. Expand content and visual polish.
@@ -418,4 +421,4 @@ Use Roblox Studio local multiplayer testing for the real gameplay loop:
 
 ## Repository Reality Check
 
-This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are monetization validation, reward-wheel completion, stronger automated coverage, codebase cleanup, and final feature-scope decisions.
+This repository is no longer just a prototype, but it also is not fully productionized. The core loop is genuinely playable, both implemented modes are present in code, and the lobby/economy shell is functional. The main unfinished areas are monetization validation, reward-wheel polish, stronger automated coverage, codebase cleanup, and final feature-scope decisions.

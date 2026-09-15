@@ -378,7 +378,9 @@ do
 	ui.rewardBodyLabel = findUi(ui.rewardsPanel, "RewardBodyLabel")
 	ui.rewardAmountLabel = findUi(ui.rewardsPanel, "RewardAmountLabel")
 	ui.claimRewardButton = findUi(ui.rewardsPanel, "ClaimRewardButton")
+	ui.spinWheelButton = findUi(ui.rewardsPanel, "SpinWheelButton")
 	ui.rewardWheelBodyLabel = findUi(ui.rewardsPanel, "RewardWheelBodyLabel")
+	ui.rewardWheelResultLabel = findUi(ui.rewardsPanel, "RewardWheelResultLabel")
 	ui.closeLeaderboardButton = findUi(ui.leaderboardPanel, "CloseLeaderboardButton")
 	ui.leaderboardStatusLabel = findUi(ui.leaderboardPanel, "LeaderboardStatusLabel")
 	ui.leaderboardEmptyLabel = findUi(ui.leaderboardPanel, "LeaderboardEmptyLabel")
@@ -781,7 +783,12 @@ local function updateRewardsPanel(rewardState)
 	modeUi.rewardNextClaimLabel.Text = (state and state.nextClaimText) or "Ready now"
 	modeUi.rewardNextClaimLabel.TextColor3 = if canClaim then getUiTheme().text.success else getUiTheme().text.muted
 	ui.rewardsStatusLabel.Text = if state and state.message then state.message elseif claimed then "Daily reward already claimed." else "Daily reward ready."
-	ui.rewardWheelBodyLabel.Text = (state and state.wheelStatus) or "Prize wheel display is live in the lobby. Daily coins are available now."
+	local canSpinWheel = state == nil or state.canSpinWheel == true
+	ui.rewardWheelBodyLabel.Text = "Spin once per UTC day for a weighted coin prize."
+	ui.rewardWheelResultLabel.Text = (state and state.wheelStatus) or "Prize wheel spin ready."
+	ui.rewardWheelResultLabel.TextColor3 = if canSpinWheel then getUiTheme().text.success else getUiTheme().text.muted
+	ui.spinWheelButton.Text = if canSpinWheel then "Spin Wheel" else "Spun Today"
+	setButtonEnabled(ui.spinWheelButton, canSpinWheel)
 
 	local segments = state and state.wheelSegments or {}
 	for index = 1, 5 do
@@ -2418,6 +2425,12 @@ ui.claimRewardButton.MouseButton1Click:Connect(function()
 	ui.rewardsStatusLabel.Text = "Claiming..."
 	setButtonEnabled(ui.claimRewardButton, false)
 	RemoteEvents.RewardClaimRequested:FireServer()
+end)
+
+ui.spinWheelButton.MouseButton1Click:Connect(function()
+	ui.rewardWheelResultLabel.Text = "Spinning..."
+	setButtonEnabled(ui.spinWheelButton, false)
+	RemoteEvents.RewardSpinRequested:FireServer()
 end)
 
 ui.lobbyBackButton.MouseButton1Click:Connect(function()

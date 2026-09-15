@@ -19,7 +19,7 @@ local REWARDS = {
 
 local REWARD_TYPES = {
 	Daily = "daily",
-	WheelPreview = "wheel_preview",
+	Wheel = "wheel",
 }
 
 local REWARD_WHEEL_SEGMENTS = {
@@ -36,28 +36,28 @@ local SHOP_CATALOG = {
 		name = "Neon Trail",
 		category = "Trail",
 		price = 45,
-		description = "A bright trail placeholder for future character cosmetics.",
+		description = "Adds a bright neon trail behind your character.",
 	},
 	{
 		id = "theme_midnight",
 		name = "Midnight Panel Theme",
 		category = "Theme",
 		price = 70,
-		description = "A future UI skin for match panels.",
+		description = "Switches your local match UI to a darker midnight theme.",
 	},
 	{
 		id = "tag_quick_cracker",
 		name = "Quick Cracker Tag",
 		category = "Title",
 		price = 95,
-		description = "A lobby title tag placeholder.",
+		description = "Shows a Quick Cracker title above your character.",
 	},
 	{
 		id = "spark_lobby",
 		name = "Lobby Spark FX",
 		category = "Lobby",
 		price = 120,
-		description = "A future lobby cosmetic effect.",
+		description = "Adds a spark effect while you are in lobby states.",
 	},
 }
 
@@ -67,11 +67,13 @@ local equippedItemsByPlayerId = {}
 local processedReceiptsByPlayerId = {}
 local rewardClaimedByPlayerId = {}
 local lastDailyClaimDayByPlayerId = {}
+local lastWheelSpinDayByPlayerId = {}
 local loadFailedByPlayerId = {}
 local loadedByPlayerId = {}
 local sessionOnlyByPlayerId = {}
 local progressionStore = DataStoreService:GetDataStore(DATASTORE_NAME)
 local ensureInventory
+local wheelRandom = Random.new()
 
 local function getPlayerKey(playerOrUserId)
 	if typeof(playerOrUserId) == "Instance" then
@@ -155,11 +157,41 @@ local function sanitizeProcessedReceipts(rawProcessedReceipts)
 end
 
 local function sanitizeRewardState(rawRewards)
-	if type(rawRewards) ~= "table" or type(rawRewards.lastDailyClaimDay) ~= "string" then
-		return nil
+	local rewards = {}
+	if type(rawRewards) ~= "table" then
+		return rewards
 	end
 
-	return rawRewards.lastDailyClaimDay
+	if type(rawRewards.lastDailyClaimDay) == "string" then
+		rewards.lastDailyClaimDay = rawRewards.lastDailyClaimDay
+	end
+	if type(rawRewards.lastWheelSpinDay) == "string" then
+		rewards.lastWheelSpinDay = rawRewards.lastWheelSpinDay
+	end
+
+	return rewards
+end
+
+local function chooseWheelSegment()
+	local totalWeight = 0
+	for _, segment in ipairs(REWARD_WHEEL_SEGMENTS) do
+		totalWeight += math.max(0, tonumber(segment.weight) or 0)
+	end
+
+	if totalWeight <= 0 then
+		return REWARD_WHEEL_SEGMENTS[1], 1
+	end
+
+	local roll = wheelRandom:NextNumber(0, totalWeight)
+	local runningWeight = 0
+	for index, segment in ipairs(REWARD_WHEEL_SEGMENTS) do
+		runningWeight += math.max(0, tonumber(segment.weight) or 0)
+		if roll <= runningWeight then
+			return segment, index
+		end
+	end
+
+	return REWARD_WHEEL_SEGMENTS[#REWARD_WHEEL_SEGMENTS], #REWARD_WHEEL_SEGMENTS
 end
 
 local function getCurrentUtcDay()
@@ -220,6 +252,7 @@ local function buildSaveData(playerOrUserId)
 		processedReceipts = processedReceiptsByPlayerId[playerKey] or {},
 		rewards = {
 			lastDailyClaimDay = lastDailyClaimDayByPlayerId[playerKey],
+			lastWheelSpinDay = lastWheelSpinDayByPlayerId[playerKey],
 		},
 	}
 end
@@ -232,6 +265,7 @@ local function applyLoadedData(player, data)
 		equippedItemsByPlayerId[playerKey] = {}
 		processedReceiptsByPlayerId[playerKey] = {}
 		lastDailyClaimDayByPlayerId[playerKey] = nil
+		lastWheelSpinDayByPlayerId[playerKey] = nil
 		return
 	end
 
@@ -241,7 +275,9 @@ local function applyLoadedData(player, data)
 	ownedItemsByPlayerId[playerKey] = ownedItems
 	equippedItemsByPlayerId[playerKey] = sanitizeEquippedItems(data.equippedItems, ownedItems)
 	processedReceiptsByPlayerId[playerKey] = sanitizeProcessedReceipts(data.processedReceipts)
-	lastDailyClaimDayByPlayerId[playerKey] = sanitizeRewardState(data.rewards)
+	local rewards = sanitizeRewardState(data.rewards)
+	lastDailyClaimDayByPlayerId[playerKey] = rewards.lastDailyClaimDay
+	lastWheelSpinDayByPlayerId[playerKey] = rewards.lastWheelSpinDay
 end
 
 local function saveProgression(playerOrUserId)
@@ -301,8 +337,10 @@ local function buildRewardState(player, message)
 	local playerKey = getPlayerKey(player)
 	local today = getCurrentUtcDay()
 	local lastClaimDay = lastDailyClaimDayByPlayerId[playerKey]
+	local lastWheelSpinDay = lastWheelSpinDayByPlayerId[playerKey]
 	local progressionReady = loadedByPlayerId[playerKey] == true and loadFailedByPlayerId[playerKey] ~= true
 	local canClaim = progressionReady and lastClaimDay ~= today
+	local canSpinWheel = progressionReady and lastWheelSpinDay ~= today
 	local nextClaimUnix = getNextUtcDayUnix()
 	local secondsUntilNextClaim = math.max(0, nextClaimUnix - os.time())
 	return {
@@ -312,7 +350,9 @@ local function buildRewardState(player, message)
 		claimAmount = REWARDS.DailyClaim,
 		claimed = not canClaim,
 		canClaim = canClaim,
+		canSpinWheel = canSpinWheel,
 		lastClaimDay = lastClaimDay,
+		lastWheelSpinDay = lastWheelSpinDay,
 		currentDay = today,
 		nextClaimUnix = nextClaimUnix,
 		secondsUntilNextClaim = secondsUntilNextClaim,
@@ -321,8 +361,12 @@ local function buildRewardState(player, message)
 			elseif canClaim then "Ready now"
 			else formatTimeRemaining(secondsUntilNextClaim),
 		wheelSegments = REWARD_WHEEL_SEGMENTS,
-		wheelEnabled = false,
-		wheelStatus = "Prize wheel display is live in the lobby. Daily coins are available now.",
+		wheelEnabled = progressionReady,
+		wheelClaimed = not canSpinWheel,
+		wheelStatus = if not progressionReady
+			then "Prize wheel is available after progression loads."
+			elseif canSpinWheel then "Prize wheel spin ready."
+			else "Prize wheel already spun today. Come back after the next UTC reset.",
 		message = message,
 	}
 end
@@ -613,6 +657,12 @@ local function mergeProgressionSnapshot(currentData, playerKey)
 
 	currentData.processedReceipts = sanitizeProcessedReceipts(currentData.processedReceipts)
 	currentData.rewards = if type(currentData.rewards) == "table" then currentData.rewards else {}
+	currentData.rewards.lastDailyClaimDay = if type(currentData.rewards.lastDailyClaimDay) == "string"
+		then currentData.rewards.lastDailyClaimDay
+		else nil
+	currentData.rewards.lastWheelSpinDay = if type(currentData.rewards.lastWheelSpinDay) == "string"
+		then currentData.rewards.lastWheelSpinDay
+		else nil
 	return currentData
 end
 
@@ -676,6 +726,71 @@ function EconomyService.claimDailyReward(player)
 	return claimed
 end
 
+function EconomyService.claimWheelReward(player)
+	local playerKey = getPlayerKey(player)
+	if loadFailedByPlayerId[playerKey] or not loadedByPlayerId[playerKey] then
+		fireRewardState(player, "Prize wheel is unavailable until progression loads.")
+		return false, "Progression is not ready."
+	end
+
+	local today = getCurrentUtcDay()
+	local segment = chooseWheelSegment()
+	local rewardAmount = math.max(0, math.floor(tonumber(segment and segment.coins) or 0))
+	if rewardAmount <= 0 then
+		fireRewardState(player, "Prize wheel reward is not configured.")
+		return false, "Prize wheel reward is not configured."
+	end
+
+	if sessionOnlyByPlayerId[playerKey] then
+		if lastWheelSpinDayByPlayerId[playerKey] == today then
+			fireRewardState(player, "Prize wheel already spun today. Come back tomorrow.")
+			return false, "Prize wheel already spun today."
+		end
+
+		lastWheelSpinDayByPlayerId[playerKey] = today
+		EconomyService.addCurrency(player, rewardAmount, "PrizeWheel")
+		fireRewardState(player, "Prize wheel landed on " .. tostring(segment.label) .. ". +" .. tostring(rewardAmount) .. " coins!")
+		return true, segment
+	end
+
+	local claimed = false
+	local updatedData = nil
+	local ok, updateError = pcall(function()
+		updatedData = progressionStore:UpdateAsync(getStoreKey(player), function(currentData)
+			currentData = if type(currentData) == "table" then currentData else {}
+			currentData = mergeProgressionSnapshot(currentData, playerKey)
+
+			if currentData.rewards.lastWheelSpinDay == today then
+				return currentData
+			end
+
+			local storedCoins = math.max(0, math.floor(tonumber(currentData.coins) or STARTING_BALANCE))
+			currentData.coins = math.max(storedCoins, EconomyService.getBalance(player)) + rewardAmount
+			currentData.rewards.lastWheelSpinDay = today
+			claimed = true
+			return currentData
+		end)
+	end)
+
+	if not ok then
+		warn("[FastGuesser] Prize wheel claim failed for", playerKey, updateError)
+		fireRewardState(player, "Prize wheel spin could not be saved. Try again soon.")
+		return false, "Prize wheel update failed."
+	end
+
+	applyLoadedData(player, updatedData)
+	if claimed then
+		fireBalanceChanged(player, rewardAmount, "PrizeWheel")
+		fireShopState(player)
+		fireRewardState(player, "Prize wheel landed on " .. tostring(segment.label) .. ". +" .. tostring(rewardAmount) .. " coins!")
+	else
+		fireBalanceChanged(player, 0, "PrizeWheelDuplicate")
+		fireRewardState(player, "Prize wheel already spun today. Come back tomorrow.")
+	end
+
+	return claimed, segment
+end
+
 function EconomyService.claimTestReward(player)
 	return EconomyService.claimDailyReward(player)
 end
@@ -700,6 +815,7 @@ function EconomyService.clearSession(player)
 	processedReceiptsByPlayerId[playerKey] = nil
 	rewardClaimedByPlayerId[playerKey] = nil
 	lastDailyClaimDayByPlayerId[playerKey] = nil
+	lastWheelSpinDayByPlayerId[playerKey] = nil
 	loadFailedByPlayerId[playerKey] = nil
 	loadedByPlayerId[playerKey] = nil
 	sessionOnlyByPlayerId[playerKey] = nil

@@ -1,7 +1,7 @@
 local GuiBuilder = {}
 
 local SCREEN_GUI_NAME = "FastGuesserDevScreenGui"
-local UI_VERSION = 25
+local UI_VERSION = 26
 
 local COLORS = {
 	background = Color3.fromRGB(8, 13, 22),
@@ -856,18 +856,20 @@ local function createRewardsPanel(parent)
 	createLabel(card, "RewardNextClaimLabel", "Ready now", UDim2.new(1, -260, 0, 24), UDim2.fromOffset(0, 124), 17, COLORS.success).Font = Enum.Font.GothamBold
 	createButton(card, "ClaimRewardButton", "Claim Daily Reward", UDim2.fromOffset(240, 52), UDim2.fromOffset(0, 150), "Primary")
 
-	local wheelCard = createCard(shell, "RewardWheelCard", UDim2.new(1, 0, 0, 126), UDim2.fromOffset(0, 328), COLORS.panelAlt, 18)
+	local wheelCard = createCard(shell, "RewardWheelCard", UDim2.new(1, 0, 0, 162), UDim2.fromOffset(0, 328), COLORS.panelAlt, 18)
 	addPadding(wheelCard, 20, 18, 20, 18)
 	createLabel(wheelCard, "RewardWheelTitleLabel", "Prize Wheel Board", UDim2.new(1, 0, 0, 24), UDim2.fromOffset(0, 0), 20, COLORS.text).Font = Enum.Font.GothamBlack
-	createLabel(wheelCard, "RewardWheelBodyLabel", "The lobby station now shows the prize wheel structure. Daily coin claims are live today.", UDim2.new(1, 0, 0, 38), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
+	createLabel(wheelCard, "RewardWheelBodyLabel", "Spin once per UTC day for a weighted coin prize.", UDim2.new(1, -190, 0, 38), UDim2.fromOffset(0, 30), 14, COLORS.mutedText)
+	createButton(wheelCard, "SpinWheelButton", "Spin Wheel", UDim2.fromOffset(164, 44), UDim2.new(1, -164, 0, 24), "Primary")
 	for index = 1, 5 do
-		local segment = createCard(wheelCard, "RewardWheelSegment" .. tostring(index), UDim2.new(0.2, -8, 0, 36), UDim2.new((index - 1) * 0.2, 4, 0, 66), COLORS.panelRaised, 12)
+		local segment = createCard(wheelCard, "RewardWheelSegment" .. tostring(index), UDim2.new(0.2, -8, 0, 36), UDim2.new((index - 1) * 0.2, 4, 0, 74), COLORS.panelRaised, 12)
 		local label = createLabel(segment, "RewardWheelSegmentLabel" .. tostring(index), "-", UDim2.fromScale(1, 1), UDim2.fromOffset(0, 0), 16, COLORS.coin)
 		label.Font = Enum.Font.GothamBlack
 		label.TextXAlignment = Enum.TextXAlignment.Center
 	end
+	createLabel(wheelCard, "RewardWheelResultLabel", "Wheel ready.", UDim2.new(1, 0, 0, 22), UDim2.fromOffset(0, 120), 15, COLORS.mutedText).Font = Enum.Font.GothamBold
 
-	local status = createLabel(shell, "RewardsStatusLabel", "Reward ready.", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 474), 18, COLORS.mutedText)
+	local status = createLabel(shell, "RewardsStatusLabel", "Reward ready.", UDim2.new(1, 0, 0, 34), UDim2.fromOffset(0, 510), 18, COLORS.mutedText)
 	status.Font = Enum.Font.GothamBold
 	local close = createButton(shell, "CloseRewardsButton", "Close", UDim2.fromOffset(156, 44), UDim2.new(1, -156, 1, -44), "Secondary")
 	close.AnchorPoint = Vector2.new(0, 1)
@@ -965,6 +967,8 @@ local function isCurrentGui(gui)
 		and gui:FindFirstChild("RewardTitleLabel", true)
 		and gui:FindFirstChild("RewardBodyLabel", true)
 		and gui:FindFirstChild("RewardWheelBodyLabel", true)
+		and gui:FindFirstChild("SpinWheelButton", true)
+		and gui:FindFirstChild("RewardWheelResultLabel", true)
 		and gui:FindFirstChild("RewardWheelSegment1", true)
 		and gui:FindFirstChild("LeaderboardPanel", true)
 		and gui:FindFirstChild("ResultSubtitleLabel", true)

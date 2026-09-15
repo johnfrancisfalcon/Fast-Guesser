@@ -64,7 +64,7 @@ The project is no longer in "build the first version" mode. It is now in "finish
 ### High Priority
 
 - validate live/studio purchase flow with the configured product IDs
-- turn the rewards wheel into a real spin system
+- polish the implemented daily prize wheel spin presentation and animation
 - add stronger automated testing for core gameplay and economy flows
 
 ### Medium Priority
@@ -109,20 +109,20 @@ Definition of done:
 
 ## Phase 2: Rewards Feature Completion
 
-Goal: resolve the current "wheel later" placeholder.
+Goal: improve the functional daily prize wheel into a polished reward feature.
 
 Tasks:
 
-- decide whether the rewards station remains a daily-claim-plus-wheel feature or daily claim only
-- if wheel stays, implement weighted roll selection from the configured reward segments
-- add client feedback for spin outcome
-- prevent duplicate claims and define cooldown/eligibility rules clearly
-- update rewards copy to match the final mechanic
+- maintain the rewards station as a daily-claim-plus-wheel feature
+- keep weighted roll selection server-authoritative
+- improve client animation and celebration feedback for spin outcomes
+- preserve duplicate spin prevention with the UTC daily cooldown
+- keep rewards copy aligned with the final mechanic
 
 Definition of done:
 
 - rewards station behavior matches what players see in the lobby and UI
-- no placeholder "future feature" messaging remains in the player-facing flow
+- prize wheel outcomes feel clear and polished, not just functional
 
 ## Phase 3: Stability and Test Coverage
 
@@ -182,7 +182,7 @@ Tasks:
 
 - decide whether the leaderboard remains server-session only or graduates to a broader persisted/global presentation
 - expand the cosmetic catalog with items that have clearly visible in-game effects
-- replace placeholder cosmetic descriptions with final player-facing copy
+- keep player-facing cosmetic descriptions aligned with visible behavior
 - decide whether to keep the current generated lobby presentation or invest in a more polished environment pass
 - review whether additional game modes, reward loops, or progression hooks should be added before broader polish work
 - document which pending features are committed for MVP and which should be deferred to post-MVP
@@ -191,12 +191,12 @@ Definition of done:
 
 - pending feature work is grouped into an intentional scope instead of an open-ended backlog
 - each feature has a clear status: ship in MVP, postpone, or cut
-- player-facing placeholder copy and ambiguous feature intent are reduced across the project
+- player-facing copy and ambiguous feature intent are reduced across the project
 
 ## Current Recommended Priority Order
 
 1. Validate the configured Developer Product purchase flow.
-2. Finish or simplify the rewards wheel.
+2. Polish the implemented rewards wheel.
 3. Add better automated coverage for gameplay and economy.
 4. Split the monolithic session and client/UI files.
 5. Expand content and visual polish.
